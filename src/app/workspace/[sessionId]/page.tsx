@@ -30,7 +30,8 @@ const PATTERN_CUES = {
 	"Heap": ["priority queue", "kth largest/smallest", "merge k sorted", "top k elements"],
 	"Trie": ["prefix matching", "word search", "autocomplete", "prefix tree"],
 	"Union Find": ["disjoint sets", "connected components", "cycle detection", "merge operations"],
-	"Sorting": ["arrange elements", "comparison-based", "in-place vs stable", "time complexity"]
+	"Sorting": ["arrange elements", "comparison-based", "in-place vs stable", "time complexity"],
+	"Brute Force": ["try all possibilities", "nested loops", "exhaustive search", "simple but inefficient"]
 };
 
 type Phase = "explore"|"planning"|"implementation"|"reflection";
