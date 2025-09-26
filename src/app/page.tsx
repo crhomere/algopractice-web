@@ -32,7 +32,7 @@ export default function Home() {
     setModalOpen(true);
   };
 
-  const handleStartPractice = (mode: 'timed' | 'untimed') => {
+  const handleStartPractice = (mode: 'timed' | 'untimed' | 'strict') => {
     if (selectedProblem) {
       // Navigate to workspace with mode parameter
       router.push(`/workspace/${selectedProblem.id}?mode=${mode}`);

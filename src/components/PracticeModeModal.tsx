@@ -3,7 +3,7 @@ import { useState } from 'react';
 type PracticeModeModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onStartPractice: (mode: 'timed' | 'untimed') => void;
+  onStartPractice: (mode: 'timed' | 'untimed' | 'strict') => void;
   problemTitle: string;
   difficulty: string;
 };
@@ -15,7 +15,7 @@ export function PracticeModeModal({
   problemTitle, 
   difficulty 
 }: PracticeModeModalProps) {
-  const [selectedMode, setSelectedMode] = useState<'timed' | 'untimed'>('timed');
+  const [selectedMode, setSelectedMode] = useState<'timed' | 'untimed' | 'strict'>('timed');
 
   if (!isOpen) return null;
 
@@ -55,13 +55,30 @@ export function PracticeModeModal({
                 name="practiceMode"
                 value="timed"
                 checked={selectedMode === 'timed'}
-                onChange={(e) => setSelectedMode(e.target.value as 'timed' | 'untimed')}
+                onChange={(e) => setSelectedMode(e.target.value as 'timed' | 'untimed' | 'strict')}
                 className="mr-3"
               />
               <div>
                 <div className="font-medium text-gray-900">Timed Practice</div>
                 <div className="text-sm text-gray-600">
-                  {getTimeLimit()} total time limit
+                  {getTimeLimit()} total time limit, can advance early
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+              <input
+                type="radio"
+                name="practiceMode"
+                value="strict"
+                checked={selectedMode === 'strict'}
+                onChange={(e) => setSelectedMode(e.target.value as 'timed' | 'untimed' | 'strict')}
+                className="mr-3"
+              />
+              <div>
+                <div className="font-medium text-gray-900">Strict Timed Practice</div>
+                <div className="text-sm text-gray-600">
+                  {getTimeLimit()} total time limit, enforces phase transitions
                 </div>
               </div>
             </label>
@@ -72,7 +89,7 @@ export function PracticeModeModal({
                 name="practiceMode"
                 value="untimed"
                 checked={selectedMode === 'untimed'}
-                onChange={(e) => setSelectedMode(e.target.value as 'timed' | 'untimed')}
+                onChange={(e) => setSelectedMode(e.target.value as 'timed' | 'untimed' | 'strict')}
                 className="mr-3"
               />
               <div>

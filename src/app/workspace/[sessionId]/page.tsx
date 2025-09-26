@@ -5,6 +5,7 @@ import { Timer } from "@/components/Timer";
 import { PhaseStepper } from "@/components/PhaseStepper";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ExplorePattern, ExplorePatternData } from "@/components/ExplorePattern";
+import { TimeoutModal } from "@/components/TimeoutModal";
 
 const MIN_SECONDS = {
 	explore: 60 * 2,
@@ -38,7 +39,7 @@ export default function WorkspacePage() {
 	const params = useParams<{ sessionId: string }>();
 	const searchParams = useSearchParams();
 	const sessionIdParam = (params?.sessionId as string) || "";
-	const practiceMode = searchParams.get('mode') as 'timed' | 'untimed' | null;
+	const practiceMode = searchParams.get('mode') as 'timed' | 'untimed' | 'strict' | null;
 
 	const [phase, setPhase] = useState<Phase>("explore");
 	const [sessionId, setSessionId] = useState<string>(sessionIdParam);
@@ -61,6 +62,8 @@ export default function WorkspacePage() {
 	const [phaseStart, setPhaseStart] = useState<number>(Date.now());
 	const [testResults, setTestResults] = useState<any>(null);
 	const [submitted, setSubmitted] = useState<boolean>(false);
+	const [timeoutModalOpen, setTimeoutModalOpen] = useState<boolean>(false);
+	const [timerExpired, setTimerExpired] = useState<boolean>(false);
 
 	useEffect(() => {
 		(async () => {
@@ -81,6 +84,11 @@ export default function WorkspacePage() {
 	
 	const activePattern = explorePatterns.find(p => p.id === activePatternId);
 	const canAdvance = useMemo(() => {
+		// In strict mode, only allow advancement when timer expires or all requirements met
+		if (practiceMode === 'strict' && !timerExpired) {
+			return false;
+		}
+
 		// Check if required inputs are complete (timer is just a guideline)
 		if (phase === 'explore') {
 			return activePattern && 
@@ -93,7 +101,7 @@ export default function WorkspacePage() {
 		if (phase === 'implementation') return implCode.trim().length > 0 && submitted;
 		if (phase === 'reflection') return notes.trim().length >= 20;
 		return false;
-	}, [phase, activePattern, planning, implCode, notes, submitted]);
+	}, [phase, activePattern, planning, implCode, notes, submitted, practiceMode, timerExpired]);
 
 	// Helper functions for pattern management
 	const addNewPattern = () => {
@@ -170,6 +178,32 @@ export default function WorkspacePage() {
 
 	const timerSeconds = getTimerSeconds();
 
+	// Handle timer expiration for strict mode
+	const handleTimerExpire = () => {
+		if (practiceMode === 'strict' && phase !== 'reflection') {
+			setTimerExpired(true);
+			setTimeoutModalOpen(true);
+		}
+	};
+
+	// Handle timeout modal actions
+	const handleContinueStrict = () => {
+		setTimeoutModalOpen(false);
+		setTimerExpired(false);
+		goNext();
+	};
+
+	const handleSwitchToTimed = () => {
+		setTimeoutModalOpen(false);
+		setTimerExpired(false);
+		// Update URL to switch to timed mode
+		const url = new URL(window.location.href);
+		url.searchParams.set('mode', 'timed');
+		window.history.replaceState({}, '', url.toString());
+		// Force reload to update practiceMode
+		window.location.reload();
+	};
+
 	// Get cues for the selected pattern
 	const availableCues = activePattern?.pattern ? (PATTERN_CUES[activePattern.pattern as keyof typeof PATTERN_CUES] || []) : [];
 
@@ -223,13 +257,14 @@ export default function WorkspacePage() {
 	}
 
 	return (
-    <div className="p-4 space-y-4">
+		<>
+			<div className="p-4 space-y-4">
 			<div className="flex items-center justify-between">
 				<PhaseStepper phase={phase} />
 				<div className="flex items-center gap-2">
 					{timerSeconds !== null ? (
 						<>
-							<Timer seconds={timerSeconds} />
+							<Timer seconds={timerSeconds} onExpire={handleTimerExpire} />
 							<span className="text-xs text-gray-500">
 								({problem?.difficulty?.toLowerCase() === 'easy' ? '15' : 
 								  problem?.difficulty?.toLowerCase() === 'medium' ? '30' : 
@@ -243,7 +278,8 @@ export default function WorkspacePage() {
 					) : (
 						<span className="text-sm text-gray-500">Loading timer...</span>
 					)}
-					{timerWarning && <span className="text-xs text-orange-500">(can advance early)</span>}
+					{timerWarning && practiceMode !== 'strict' && <span className="text-xs text-orange-500">(can advance early)</span>}
+					{practiceMode === 'strict' && <span className="text-xs text-red-500">(strict mode - no early advance)</span>}
 				</div>
 			</div>
 
@@ -430,6 +466,13 @@ export default function WorkspacePage() {
 					</div>
 				</section>
 			)}
-		</div>
+			</div>
+
+			<TimeoutModal
+				isOpen={timeoutModalOpen}
+				onContinueStrict={handleContinueStrict}
+				onSwitchToTimed={handleSwitchToTimed}
+				phase={phase}
+			/>
+		</>
 	);
-}
