@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { AIPrompt, AIResponse } from './types.js';
+import { AIPrompt, AIResponse } from './types';
 
 export class AIClient {
   private client: OpenAI;
@@ -24,11 +24,22 @@ export class AIClient {
           { role: 'system', content: prompt.system },
           { role: 'user', content: prompt.user }
         ],
-        max_completion_tokens: 2000,
+        max_completion_tokens: 4000,
       });
 
       const choice = response.choices[0];
+      console.log('AI Response:', {
+        hasChoices: !!response.choices,
+        choicesLength: response.choices?.length || 0,
+        hasChoice: !!choice,
+        hasMessage: !!choice?.message,
+        hasContent: !!choice?.message?.content,
+        contentLength: choice?.message?.content?.length || 0,
+        contentPreview: choice?.message?.content?.substring(0, 100) || 'none'
+      });
+      
       if (!choice?.message?.content) {
+        console.error('Full response object:', JSON.stringify(response, null, 2));
         throw new Error('No response content from AI');
       }
 
@@ -56,57 +67,62 @@ export class AIClient {
     userSolution: any
   ): Promise<string> {
     const prompt: AIPrompt = {
-      system: `You are an expert algorithm tutor helping students learn coding interview patterns. 
-      Your role is to provide constructive feedback on their solution approach.
-      
-      Always respond in valid JSON format with the following structure:
-      {
-        "patternAccuracy": {
-          "correct": boolean,
-          "explanation": "string",
-          "suggestedPattern": "string (optional)"
-        },
-        "complexityAccuracy": {
-          "timeComplexity": {
-            "correct": boolean,
-            "explanation": "string",
-            "suggested": "string (optional)"
-          },
-          "spaceComplexity": {
-            "correct": boolean,
-            "explanation": "string",
-            "suggested": "string (optional)"
-          },
-          "optimality": {
-            "isOptimal": boolean,
-            "explanation": "string",
-            "betterApproach": "string (optional)"
-          }
-        },
-        "brainstormingDirection": {
-          "onTrack": boolean,
-          "explanation": "string",
-          "suggestions": ["string array (optional)"]
-        },
-        "overallAssessment": {
-          "score": number (0-100),
-          "summary": "string",
-          "strengths": ["string array"],
-          "improvements": ["string array"]
-        }
-      }`,
+      system: `You are an expert algorithm tutor. Evaluate the student's solution approach and provide feedback in this exact JSON format:
+
+{
+  "patternAccuracy": {
+    "correct": boolean,
+    "explanation": "string",
+    "suggestedPattern": "string (optional)"
+  },
+  "complexityAccuracy": {
+    "timeComplexity": {
+      "correct": boolean,
+      "explanation": "string",
+      "suggested": "string (optional)"
+    },
+    "spaceComplexity": {
+      "correct": boolean,
+      "explanation": "string",
+      "suggested": "string (optional)"
+    },
+    "optimality": {
+      "isOptimal": boolean,
+      "explanation": "string",
+      "betterApproach": "string (optional)"
+    }
+  },
+  "brainstormingDirection": {
+    "onTrack": boolean,
+    "explanation": "string",
+    "suggestions": ["string array (optional)"]
+  },
+  "overallAssessment": {
+    "score": number (0-100),
+    "summary": "string",
+    "strengths": ["string array"],
+    "improvements": ["string array"]
+  }
+}`,
       user: `Problem: ${problem.title}
-      Description: ${problem.prompt}
-      Difficulty: ${problem.difficulty}
-      
-      User's Solution Approach:
-      Pattern: ${userSolution.pattern}
-      Time Complexity: ${userSolution.timeComplexity}
-      Space Complexity: ${userSolution.spaceComplexity}
-      Brainstorming: ${userSolution.brainstorming}
-      
-      Please evaluate this solution approach and provide detailed feedback.`
+Description: ${problem.prompt}
+Difficulty: ${problem.difficulty}
+
+Student's approach:
+- Pattern: ${userSolution.pattern}
+- Time: ${userSolution.timeComplexity}
+- Space: ${userSolution.spaceComplexity}
+- Notes: ${userSolution.brainstorming}
+
+Evaluate and return JSON feedback.`
     };
+
+    console.log('Sending prompt to AI:', {
+      systemLength: prompt.system.length,
+      userLength: prompt.user.length,
+      problemTitle: problem.title,
+      userPattern: userSolution.pattern
+    });
 
     const response = await this.callAI(prompt);
     return response.content;

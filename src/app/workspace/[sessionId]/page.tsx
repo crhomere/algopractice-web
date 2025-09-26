@@ -244,7 +244,7 @@ export default function WorkspacePage() {
 	}
 
 	async function checkAccuracy() {
-		if (!problem || explorePatterns.length === 0) return;
+		if (!problem || !activePattern) return;
 		
 		setIsCheckingAccuracy(true);
 		try {
@@ -253,10 +253,10 @@ export default function WorkspacePage() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					problemId: problem.id,
-					explorePatterns: explorePatterns.map(p => ({
-						...p,
-						cues: Array.from(p.cues)
-					}))
+					explorePatterns: [{
+						...activePattern,
+						cues: Array.from(activePattern.cues)
+					}]
 				})
 			});
 			
@@ -395,6 +395,9 @@ export default function WorkspacePage() {
 					{exploreFeedback.length > 0 && (
 						<div className="space-y-4">
 							<h4 className="font-semibold text-green-600">AI Feedback</h4>
+							<p className="text-sm text-gray-400">
+								Evaluating: <span className="font-medium">{activePattern?.pattern || "Current Solution"}</span>
+							</p>
 							{exploreFeedback.map((feedback, idx) => (
 								<div key={idx} className="border rounded p-4 bg-gray-800 text-white">
 									<div className="space-y-3">
@@ -495,14 +498,14 @@ export default function WorkspacePage() {
 						</button>
 						<button 
 							onClick={checkAccuracy}
-							disabled={isCheckingAccuracy || explorePatterns.length === 0}
+							disabled={isCheckingAccuracy || !activePattern}
 							className={`px-3 py-2 rounded ${
-								isCheckingAccuracy || explorePatterns.length === 0 
+								isCheckingAccuracy || !activePattern 
 									? "bg-gray-400 text-gray-600 cursor-not-allowed" 
 									: "bg-green-600 text-white hover:bg-green-700"
 							}`}
 						>
-							{isCheckingAccuracy ? "Checking..." : "Check Accuracy"}
+							{isCheckingAccuracy ? "Checking..." : "Check Current Solution"}
 						</button>
 					</div>
 				</section>
