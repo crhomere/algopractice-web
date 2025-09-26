@@ -1,0 +1,66 @@
+{
+  "two-sum": {
+    "id": "two-sum",
+    "data": {
+      "explore": {
+        "explorePatterns": [
+          {
+            "id": "1",
+            "pattern": "Queue",
+            "cues": [
+              "level order",
+              "BFS traversal"
+            ],
+            "confidence": 0.5,
+            "brainstorming": "Testggggggggggggggggggggggggggggggg",
+            "timeComplexity": "O(n log n)",
+            "spaceComplexity": "O(log n)"
+          }
+        ]
+      }
+    },
+    "phase": "planning"
+  },
+  "maximum-subarray": {
+    "id": "maximum-subarray",
+    "data": {
+      "explore": {
+        "explorePatterns": [
+          {
+            "id": "1",
+            "pattern": "Stack",
+            "cues": [
+              "monotonic stack"
+            ],
+            "confidence": 0.5,
+            "brainstorming": "",
+            "timeComplexity": "O(n log n)",
+            "spaceComplexity": "O(log n)"
+          }
+        ]
+      }
+    },
+    "phase": "planning"
+  },
+  "product-of-array-except-self": {
+    "id": "product-of-array-except-self",
+    "data": {
+      "explore": {
+        "explorePatterns": [
+          {
+            "id": "1",
+            "pattern": "Hash Map",
+            "cues": [
+              "duplicate detection"
+            ],
+            "confidence": 0.5,
+            "brainstorming": "Test",
+            "timeComplexity": "O(n²)",
+            "spaceComplexity": "O(n²)"
+          }
+        ]
+      }
+    },
+    "phase": "planning"
+  }
+}

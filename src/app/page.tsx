@@ -1,103 +1,125 @@
-import Image from "next/image";
+"use client";
+import useSWR from 'swr';
+import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { PracticeModeModal } from '@/components/PracticeModeModal';
+const fetcher = (url: string) => fetch(url).then(r => r.json());
+
+const getDifficultyColor = (difficulty: string) => {
+  switch (difficulty.toLowerCase()) {
+    case 'easy':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'medium':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'hard':
+      return 'bg-red-100 text-red-800 border-red-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { data } = useSWR('/api/problems', fetcher);
+  const problems = data || [];
+  const [showPatterns, setShowPatterns] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedProblem, setSelectedProblem] = useState<any>(null);
+  const router = useRouter();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleProblemClick = (problem: any) => {
+    setSelectedProblem(problem);
+    setModalOpen(true);
+  };
+
+  const handleStartPractice = (mode: 'timed' | 'untimed') => {
+    if (selectedProblem) {
+      // Navigate to workspace with mode parameter
+      router.push(`/workspace/${selectedProblem.id}?mode=${mode}`);
+    }
+  };
+  
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-semibold">Interview Readiness</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border rounded">Readiness Meter (placeholder)</div> 
+        <div className="p-4 border rounded md:col-span-2">Pattern Heatmap (placeholder)</div>                                                                   
+      </div>
+      
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold">Problems</h2>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Show patterns</label>
+            <button
+              onClick={() => setShowPatterns(!showPatterns)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                showPatterns ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  showPatterns ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className="text-xs text-gray-500">
+              {showPatterns ? 'Visible' : 'Hidden'}
+            </span>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {problems.map((p: any) => (
+            <button
+              key={p.id}
+              onClick={() => handleProblemClick(p)}
+              className="block p-4 border rounded-lg hover:shadow-md transition-shadow bg-gray-800 hover:bg-gray-700 text-white text-left w-full"
+            >
+              <div className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <h3 className="font-medium text-white line-clamp-2">{p.title}</h3>
+                  <span className={`px-2 py-1 rounded text-xs font-medium border ${getDifficultyColor(p.difficulty)}`}>
+                    {p.difficulty}
+                  </span>
+                </div>
+                
+                {showPatterns && p.patterns && p.patterns.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {p.patterns.slice(0, 2).map((pattern: string, idx: number) => (
+                      <span 
+                        key={idx}
+                        className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded"
+                      >
+                        {pattern}
+                      </span>
+                    ))}
+                    {p.patterns.length > 2 && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                        +{p.patterns.length - 2} more
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                {p.prompt && (
+                  <p className="text-sm text-gray-300 line-clamp-2">
+                    {p.prompt.substring(0, 100)}...
+                  </p>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <PracticeModeModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onStartPractice={handleStartPractice}
+        problemTitle={selectedProblem?.title || ''}
+        difficulty={selectedProblem?.difficulty || ''}
+      />
     </div>
   );
 }
