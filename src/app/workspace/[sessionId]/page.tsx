@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Timer } from "@/components/Timer";
 import { PhaseStepper } from "@/components/PhaseStepper";
@@ -65,6 +65,8 @@ export default function WorkspacePage() {
 	const [submitted, setSubmitted] = useState<boolean>(false);
 	const [timeoutModalOpen, setTimeoutModalOpen] = useState<boolean>(false);
 	const [timerExpired, setTimerExpired] = useState<boolean>(false);
+	const [exploreFeedback, setExploreFeedback] = useState<any[]>([]);
+	const [isCheckingAccuracy, setIsCheckingAccuracy] = useState<boolean>(false);
 
 	useEffect(() => {
 		(async () => {
@@ -241,6 +243,36 @@ export default function WorkspacePage() {
 		} catch (e) { console.error(e); }
 	}
 
+	async function checkAccuracy() {
+		if (!problem || explorePatterns.length === 0) return;
+		
+		setIsCheckingAccuracy(true);
+		try {
+			const res = await fetch('/api/feedback/explore', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					problemId: problem.id,
+					explorePatterns: explorePatterns.map(p => ({
+						...p,
+						cues: Array.from(p.cues)
+					}))
+				})
+			});
+			
+			if (res.ok) {
+				const data = await res.json();
+				setExploreFeedback(data.feedback || []);
+			} else {
+				console.error('Failed to get feedback:', await res.text());
+			}
+		} catch (e) {
+			console.error('Error checking accuracy:', e);
+		} finally {
+			setIsCheckingAccuracy(false);
+		}
+	}
+
 	async function goNext() {
 		if (!canAdvance) return;
 		if (phase === 'explore') { await persistPhase('explore'); setPhase('planning'); }
@@ -359,6 +391,100 @@ export default function WorkspacePage() {
 						/>
 					)}
 
+					{/* Feedback Display */}
+					{exploreFeedback.length > 0 && (
+						<div className="space-y-4">
+							<h4 className="font-semibold text-green-600">AI Feedback</h4>
+							{exploreFeedback.map((feedback, idx) => (
+								<div key={idx} className="border rounded p-4 bg-gray-800 text-white">
+									<div className="space-y-3">
+										{/* Pattern Accuracy */}
+										<div className="border-l-4 border-blue-500 pl-3">
+											<h5 className="font-medium text-blue-400">Pattern Accuracy</h5>
+											<p className={`text-sm ${feedback.patternAccuracy.correct ? 'text-green-400' : 'text-red-400'}`}>
+												{feedback.patternAccuracy.correct ? '✓ Correct' : '✗ Incorrect'}
+											</p>
+											<p className="text-gray-300 text-sm">{feedback.patternAccuracy.explanation}</p>
+											{feedback.patternAccuracy.suggestedPattern && (
+												<p className="text-yellow-400 text-sm">
+													Suggested: {feedback.patternAccuracy.suggestedPattern}
+												</p>
+											)}
+										</div>
+
+										{/* Complexity Accuracy */}
+										<div className="border-l-4 border-purple-500 pl-3">
+											<h5 className="font-medium text-purple-400">Complexity Analysis</h5>
+											<div className="space-y-2">
+												<div>
+													<p className={`text-sm ${feedback.complexityAccuracy.timeComplexity.correct ? 'text-green-400' : 'text-red-400'}`}>
+														Time: {feedback.complexityAccuracy.timeComplexity.correct ? '✓' : '✗'} {feedback.complexityAccuracy.timeComplexity.explanation}
+													</p>
+												</div>
+												<div>
+													<p className={`text-sm ${feedback.complexityAccuracy.spaceComplexity.correct ? 'text-green-400' : 'text-red-400'}`}>
+														Space: {feedback.complexityAccuracy.spaceComplexity.correct ? '✓' : '✗'} {feedback.complexityAccuracy.spaceComplexity.explanation}
+													</p>
+												</div>
+												<div>
+													<p className={`text-sm ${feedback.complexityAccuracy.optimality.isOptimal ? 'text-green-400' : 'text-yellow-400'}`}>
+														Optimal: {feedback.complexityAccuracy.optimality.isOptimal ? '✓' : '⚠'} {feedback.complexityAccuracy.optimality.explanation}
+													</p>
+												</div>
+											</div>
+										</div>
+
+										{/* Brainstorming Direction */}
+										<div className="border-l-4 border-orange-500 pl-3">
+											<h5 className="font-medium text-orange-400">Brainstorming Direction</h5>
+											<p className={`text-sm ${feedback.brainstormingDirection.onTrack ? 'text-green-400' : 'text-red-400'}`}>
+												{feedback.brainstormingDirection.onTrack ? '✓ On Track' : '✗ Off Track'}
+											</p>
+											<p className="text-gray-300 text-sm">{feedback.brainstormingDirection.explanation}</p>
+											{feedback.brainstormingDirection.suggestions && feedback.brainstormingDirection.suggestions.length > 0 && (
+												<div className="mt-2">
+													<p className="text-yellow-400 text-sm">Suggestions:</p>
+													<ul className="list-disc pl-4 text-gray-300 text-sm">
+														{feedback.brainstormingDirection.suggestions.map((suggestion, i) => (
+															<li key={i}>{suggestion}</li>
+														))}
+													</ul>
+												</div>
+											)}
+										</div>
+
+										{/* Overall Assessment */}
+										<div className="border-l-4 border-green-500 pl-3">
+											<h5 className="font-medium text-green-400">Overall Assessment</h5>
+											<p className="text-lg font-semibold text-green-400">Score: {feedback.overallAssessment.score}/100</p>
+											<p className="text-gray-300 text-sm">{feedback.overallAssessment.summary}</p>
+											{feedback.overallAssessment.strengths.length > 0 && (
+												<div className="mt-2">
+													<p className="text-green-400 text-sm">Strengths:</p>
+													<ul className="list-disc pl-4 text-gray-300 text-sm">
+														{feedback.overallAssessment.strengths.map((strength, i) => (
+															<li key={i}>{strength}</li>
+														))}
+													</ul>
+												</div>
+											)}
+											{feedback.overallAssessment.improvements.length > 0 && (
+												<div className="mt-2">
+													<p className="text-yellow-400 text-sm">Improvements:</p>
+													<ul className="list-disc pl-4 text-gray-300 text-sm">
+														{feedback.overallAssessment.improvements.map((improvement, i) => (
+															<li key={i}>{improvement}</li>
+														))}
+													</ul>
+												</div>
+											)}
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
+					)}
+
 					<div className="flex gap-2">
 						<button 
 							disabled={!canAdvance} 
@@ -366,6 +492,17 @@ export default function WorkspacePage() {
 							onClick={goNext}
 						>
 							Next
+						</button>
+						<button 
+							onClick={checkAccuracy}
+							disabled={isCheckingAccuracy || explorePatterns.length === 0}
+							className={`px-3 py-2 rounded ${
+								isCheckingAccuracy || explorePatterns.length === 0 
+									? "bg-gray-400 text-gray-600 cursor-not-allowed" 
+									: "bg-green-600 text-white hover:bg-green-700"
+							}`}
+						>
+							{isCheckingAccuracy ? "Checking..." : "Check Accuracy"}
 						</button>
 					</div>
 				</section>
@@ -477,3 +614,4 @@ export default function WorkspacePage() {
 			/>
 		</>
 	);
+}

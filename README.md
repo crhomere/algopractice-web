@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Deliberate Feedback Service
 
-## Getting Started
+AI-powered feedback service for algorithm practice sessions.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Pattern Accuracy**: Validates if the chosen algorithm pattern matches the problem
+- **Complexity Analysis**: Checks time/space complexity correctness and optimality
+- **Brainstorming Direction**: Evaluates if solution approach is on track
+- **Overall Assessment**: Provides comprehensive scoring and feedback
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Install Dependencies**:
+   ```bash
+   npm install openai @types/react @types/react-dom
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Environment Variables**:
+   Create `.env.local` with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
 
-## Learn More
+3. **Usage**:
+   ```typescript
+   import { FeedbackEngine } from '@/services/deliberate-feedback';
+   
+   const engine = new FeedbackEngine();
+   const feedback = await engine.evaluateExploreSolutions(problem, patterns);
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+## API Endpoints
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `POST /api/feedback/explore` - Evaluate explore phase solutions
+- `POST /api/feedback/planning` - Evaluate planning phase (planned)
+- `POST /api/feedback/implementation` - Evaluate implementation (planned)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Cost Estimation
 
-## Deploy on Vercel
+- **OpenAI GPT-5**: ~$0.05 per feedback check (estimated)
+- **Monthly estimate**: $75-300 depending on usage
+- **Optimization**: Caching and batching can reduce costs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Next Steps
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Add planning phase feedback
+2. Add implementation phase feedback
+3. Implement response caching
+4. Add error handling and fallbacks
+5. Create feedback analytics dashboard
