@@ -67,6 +67,8 @@ export default function WorkspacePage() {
 	const [timerExpired, setTimerExpired] = useState<boolean>(false);
 	const [exploreFeedback, setExploreFeedback] = useState<any[]>([]);
 	const [isCheckingAccuracy, setIsCheckingAccuracy] = useState<boolean>(false);
+	const [planningFeedback, setPlanningFeedback] = useState<any>(null);
+	const [isCheckingPlanning, setIsCheckingPlanning] = useState<boolean>(false);
 
 	useEffect(() => {
 		(async () => {
@@ -270,6 +272,40 @@ export default function WorkspacePage() {
 			console.error('Error checking accuracy:', e);
 		} finally {
 			setIsCheckingAccuracy(false);
+		}
+	}
+
+	async function checkPlanning() {
+		if (!problem || !activePattern) return;
+		
+		setIsCheckingPlanning(true);
+		try {
+			const res = await fetch('/api/feedback/planning', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					problemId: problem.id,
+					planningData: {
+						pseudocode: planning.pseudocode,
+						edgeCases: Array.from(planning.edgeCases)
+					},
+					explorePattern: {
+						...activePattern,
+						cues: Array.from(activePattern.cues)
+					}
+				})
+			});
+			
+			if (res.ok) {
+				const data = await res.json();
+				setPlanningFeedback(data.feedback);
+			} else {
+				console.error('Failed to get planning feedback:', await res.text());
+			}
+		} catch (e) {
+			console.error('Error checking planning:', e);
+		} finally {
+			setIsCheckingPlanning(false);
 		}
 	}
 
@@ -539,6 +575,17 @@ export default function WorkspacePage() {
 							← Back
 						</button>
 						<button 
+							onClick={checkPlanning}
+							disabled={isCheckingPlanning || !planning.pseudocode.trim()}
+							className={`px-3 py-2 rounded ${
+								isCheckingPlanning || !planning.pseudocode.trim() 
+									? "bg-gray-400 text-gray-600 cursor-not-allowed" 
+									: "bg-green-600 text-white hover:bg-green-700"
+							}`}
+						>
+							{isCheckingPlanning ? "Checking..." : "Check Planning"}
+						</button>
+						<button 
 							disabled={!canAdvance} 
 							className={`px-3 py-2 rounded ${canAdvance?"bg-blue-600 text-white":"bg-gray-200 text-gray-500"}`} 
 							onClick={goNext}
@@ -546,6 +593,76 @@ export default function WorkspacePage() {
 							Next
 						</button>
 					</div>
+
+					{planningFeedback && (
+						<div className="space-y-4">
+							<h4 className="font-semibold text-green-600">AI Planning Feedback</h4>
+							<div className="border rounded p-4 bg-gray-800 text-white">
+								<div className="space-y-3">
+									{/* Pseudocode Quality */}
+									<div className="border-l-4 border-blue-500 pl-3">
+										<h5 className="font-medium text-blue-400">Pseudocode Quality</h5>
+										<p className="text-lg font-semibold text-blue-400">Score: {planningFeedback.pseudocodeQuality.score}/100</p>
+										<p className="text-gray-300 text-sm">{planningFeedback.pseudocodeQuality.explanation}</p>
+										{planningFeedback.pseudocodeQuality.missingSteps && planningFeedback.pseudocodeQuality.missingSteps.length > 0 && (
+											<div className="mt-2">
+												<p className="text-yellow-400 text-sm">Missing Steps:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{planningFeedback.pseudocodeQuality.missingSteps.map((step: string, i: number) => (
+														<li key={i}>{step}</li>
+													))}
+												</ul>
+											</div>
+										)}
+									</div>
+
+									{/* Edge Case Coverage */}
+									<div className="border-l-4 border-purple-500 pl-3">
+										<h5 className="font-medium text-purple-400">Edge Case Coverage</h5>
+										<p className="text-lg font-semibold text-purple-400">Score: {planningFeedback.edgeCaseCoverage.score}/100</p>
+										<p className="text-gray-300 text-sm">{planningFeedback.edgeCaseCoverage.explanation}</p>
+										{planningFeedback.edgeCaseCoverage.missingCases && planningFeedback.edgeCaseCoverage.missingCases.length > 0 && (
+											<div className="mt-2">
+												<p className="text-yellow-400 text-sm">Missing Cases:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{planningFeedback.edgeCaseCoverage.missingCases.map((case_: string, i: number) => (
+														<li key={i}>{case_}</li>
+													))}
+												</ul>
+											</div>
+										)}
+									</div>
+
+									{/* Overall Assessment */}
+									<div className="border-l-4 border-green-500 pl-3">
+										<h5 className="font-medium text-green-400">Overall Assessment</h5>
+										<p className="text-lg font-semibold text-green-400">Score: {planningFeedback.overallAssessment.score}/100</p>
+										<p className="text-gray-300 text-sm">{planningFeedback.overallAssessment.summary}</p>
+										{planningFeedback.overallAssessment.strengths.length > 0 && (
+											<div className="mt-2">
+												<p className="text-green-400 text-sm">Strengths:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{planningFeedback.overallAssessment.strengths.map((strength: string, i: number) => (
+														<li key={i}>{strength}</li>
+													))}
+												</ul>
+											</div>
+										)}
+										{planningFeedback.overallAssessment.improvements.length > 0 && (
+											<div className="mt-2">
+												<p className="text-yellow-400 text-sm">Improvements:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{planningFeedback.overallAssessment.improvements.map((improvement: string, i: number) => (
+														<li key={i}>{improvement}</li>
+													))}
+												</ul>
+											</div>
+										)}
+									</div>
+								</div>
+							</div>
+						</div>
+					)}
 				</section>
 			)}
 

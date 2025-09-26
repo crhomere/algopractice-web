@@ -1,5 +1,5 @@
 import { AIClient } from './ai-client';
-import { ExploreFeedback, PlanningFeedback, ImplementationFeedback } from './types.js';
+import { ExploreFeedback, PlanningFeedback, ImplementationFeedback } from './types';
 
 export class FeedbackEngine {
   private aiClient: AIClient;
@@ -32,10 +32,11 @@ export class FeedbackEngine {
 
   async evaluatePlanningPhase(
     problem: any,
-    planning: any
+    planning: any,
+    explorePattern: any
   ): Promise<PlanningFeedback> {
     try {
-      const aiResponse = await this.aiClient.evaluatePlanningPhase(problem, planning);
+      const aiResponse = await this.aiClient.evaluatePlanningPhase(problem, planning, explorePattern);
       return this.parsePlanningResponse(aiResponse);
     } catch (error) {
       console.error('Error evaluating planning phase:', error);

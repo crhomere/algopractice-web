@@ -130,41 +130,53 @@ Evaluate and return JSON feedback.`
 
   async evaluatePlanningPhase(
     problem: any,
-    planning: any
+    planning: any,
+    explorePattern: any
   ): Promise<string> {
     const prompt: AIPrompt = {
-      system: `You are an expert algorithm tutor helping students learn coding interview planning.
-      Your role is to provide constructive feedback on their planning phase.
-      
-      Always respond in valid JSON format with the following structure:
-      {
-        "pseudocodeQuality": {
-          "score": number (0-100),
-          "explanation": "string",
-          "missingSteps": ["string array (optional)"]
-        },
-        "edgeCaseCoverage": {
-          "score": number (0-100),
-          "explanation": "string",
-          "missingCases": ["string array (optional)"]
-        },
-        "overallAssessment": {
-          "score": number (0-100),
-          "summary": "string",
-          "strengths": ["string array"],
-          "improvements": ["string array"]
-        }
-      }`,
+      system: `You are an expert algorithm tutor. Evaluate the student's implementation plan and provide feedback in this exact JSON format:
+
+{
+  "pseudocodeQuality": {
+    "score": number (0-100),
+    "explanation": "string",
+    "missingSteps": ["string array (optional)"]
+  },
+  "edgeCaseCoverage": {
+    "score": number (0-100),
+    "explanation": "string",
+    "missingCases": ["string array (optional)"]
+  },
+  "overallAssessment": {
+    "score": number (0-100),
+    "summary": "string",
+    "strengths": ["string array"],
+    "improvements": ["string array"]
+  }
+}`,
       user: `Problem: ${problem.title}
-      Description: ${problem.prompt}
-      Difficulty: ${problem.difficulty}
-      
-      User's Planning:
-      Pseudocode: ${planning.pseudocode}
-      Edge Cases Considered: ${Array.from(planning.edgeCases).join(', ')}
-      
-      Please evaluate this planning phase and provide detailed feedback.`
+Description: ${problem.prompt}
+Difficulty: ${problem.difficulty}
+
+Student's chosen approach:
+- Pattern: ${explorePattern.pattern}
+- Time Complexity: ${explorePattern.timeComplexity}
+- Space Complexity: ${explorePattern.spaceComplexity}
+
+Student's implementation plan:
+- Pseudocode: ${planning.pseudocode}
+- Edge Cases: ${planning.edgeCases}
+
+Evaluate the plan for correctness, completeness, and implementation readiness. Return JSON feedback.`
     };
+
+    console.log('Sending planning prompt to AI:', {
+      systemLength: prompt.system.length,
+      userLength: prompt.user.length,
+      problemTitle: problem.title,
+      hasPseudocode: !!planning.pseudocode,
+      hasEdgeCases: !!planning.edgeCases
+    });
 
     const response = await this.callAI(prompt);
     return response.content;
