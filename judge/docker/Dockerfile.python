@@ -1,0 +1,25 @@
+# Python 3.11 runtime for code execution
+FROM python:3.11-slim
+
+# Install security updates and basic utilities
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user for security
+RUN useradd -m -u 1000 runner
+
+# Set working directory
+WORKDIR /app
+
+# Copy the runner script
+COPY python-runner.py /app/runner.py
+
+# Make runner executable
+RUN chmod +x /app/runner.py
+
+# Switch to non-root user
+USER runner
+
+# Default command
+CMD ["python", "/app/runner.py"]

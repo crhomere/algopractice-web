@@ -1,0 +1,19 @@
+{
+  "name": "algopractice-judge",
+  "version": "1.0.0",
+  "description": "Docker-based code execution judge for AlgoPractice",
+  "type": "module",
+  "main": "judge.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/judge.js",
+    "build-images": "node dist/judge.js build",
+    "test": "node dist/judge.js test"
+  },
+  "dependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
