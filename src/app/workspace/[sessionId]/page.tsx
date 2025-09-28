@@ -69,6 +69,9 @@ export default function WorkspacePage() {
 	const [isCheckingAccuracy, setIsCheckingAccuracy] = useState<boolean>(false);
 	const [planningFeedback, setPlanningFeedback] = useState<any>(null);
 	const [isCheckingPlanning, setIsCheckingPlanning] = useState<boolean>(false);
+	const [selectedLanguage, setSelectedLanguage] = useState<string>('python');
+	const [isRunningCode, setIsRunningCode] = useState<boolean>(false);
+	const [runMode, setRunMode] = useState<'run' | 'test'>('run');
 
 	useEffect(() => {
 		(async () => {
@@ -236,13 +239,85 @@ export default function WorkspacePage() {
 		} catch (e) { console.error(e); }
 	}
 
-	async function runTests() {
+	async function runCode() {
+		if (!problem || !implCode.trim()) return;
+		
+		setRunMode('run');
+		setIsRunningCode(true);
 		try {
-			const res = await fetch('/api/judge/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language: 'javascript', sourceCode: implCode, problemId: sessionId }) });
-			const data = await res.json();
-			setTestResults(data);
-			setSubmitted(true); // Mark as submitted after running tests
-		} catch (e) { console.error(e); }
+			const res = await fetch('/api/judge/run', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					language: selectedLanguage,
+					sourceCode: implCode,
+					problemId: problem.id,
+					testMode: 'run' // Just execute and show output
+				})
+			});
+			
+			if (res.ok) {
+				const data = await res.json();
+				console.log('Judge response:', data); // Debug log
+				// Normalize the response to ensure all required fields exist
+				const normalizedData = {
+					...data,
+					totalScore: data.totalScore || 0,
+					maxScore: data.maxScore || 1,
+					results: data.results || [],
+					totalRuntimeMs: data.totalRuntimeMs || 0,
+					passed: data.passed || 'none'
+				};
+				setTestResults(normalizedData);
+			} else {
+				console.error('Failed to run code:', await res.text());
+			}
+		} catch (e) {
+			console.error('Error running code:', e);
+		} finally {
+			setIsRunningCode(false);
+		}
+	}
+
+	async function runTests() {
+		if (!problem || !implCode.trim()) return;
+		
+		setRunMode('test');
+		setIsRunningCode(true);
+		try {
+			const res = await fetch('/api/judge/run', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					language: selectedLanguage,
+					sourceCode: implCode,
+					problemId: problem.id,
+					testMode: 'full' // Run full test suite
+				})
+			});
+			
+			if (res.ok) {
+				const data = await res.json();
+				console.log('Judge response:', data); // Debug log
+				// Normalize the response to ensure all required fields exist
+				const normalizedData = {
+					...data,
+					totalScore: data.totalScore || 0,
+					maxScore: data.maxScore || 1,
+					results: data.results || [],
+					totalRuntimeMs: data.totalRuntimeMs || 0,
+					passed: data.passed || 'none'
+				};
+				setTestResults(normalizedData);
+				setSubmitted(true); // Mark as submitted after running tests
+			} else {
+				console.error('Failed to run tests:', await res.text());
+			}
+		} catch (e) {
+			console.error('Error running tests:', e);
+		} finally {
+			setIsRunningCode(false);
+		}
 	}
 
 	async function checkAccuracy() {
@@ -484,7 +559,7 @@ export default function WorkspacePage() {
 												<div className="mt-2">
 													<p className="text-yellow-400 text-sm">Suggestions:</p>
 													<ul className="list-disc pl-4 text-gray-300 text-sm">
-														{feedback.brainstormingDirection.suggestions.map((suggestion, i) => (
+														{feedback.brainstormingDirection.suggestions.map((suggestion: string, i: number) => (
 															<li key={i}>{suggestion}</li>
 														))}
 													</ul>
@@ -669,9 +744,30 @@ export default function WorkspacePage() {
 			{phase === 'implementation' && (
 				<section className="space-y-3">
 					<h3 className="font-semibold">Implementation</h3>
-					<div className="border rounded">
-						<CodeEditor height="320px" defaultLanguage="javascript" value={implCode} onChange={(val)=> setImplCode(val ?? "")} />
+					
+					{/* Language Selection */}
+					<div className="flex items-center gap-3">
+						<label className="text-sm font-medium">Language:</label>
+						<select 
+							value={selectedLanguage}
+							onChange={(e) => setSelectedLanguage(e.target.value)}
+							className="px-3 py-1 border rounded bg-black text-white border-gray-700"
+						>
+							<option value="python">Python</option>
+							<option value="javascript">JavaScript</option>
+							<option value="java">Java</option>
+						</select>
 					</div>
+					
+					<div className="border rounded">
+						<CodeEditor 
+							height="320px" 
+							defaultLanguage={selectedLanguage} 
+							value={implCode} 
+							onChange={(val)=> setImplCode(val ?? "")} 
+						/>
+					</div>
+					
 					<div className="flex gap-2">
 						<button 
 							onClick={goBack}
@@ -680,8 +776,58 @@ export default function WorkspacePage() {
 							← Back
 						</button>
 						<button 
-							className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" 
+							onClick={runCode}
+							disabled={isRunningCode || !implCode.trim()}
+							className={`px-3 py-2 rounded ${
+								isRunningCode || !implCode.trim() 
+									? "bg-gray-400 text-gray-600 cursor-not-allowed" 
+									: "bg-green-600 text-white hover:bg-green-700"
+							}`}
+						>
+							{isRunningCode ? "Running..." : "Run Code"}
+						</button>
+						<button 
+							onClick={() => {
+								setRunMode('test');
+								setIsRunningCode(true);
+								fetch('/api/judge/run', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										language: selectedLanguage,
+										sourceCode: implCode,
+										problemId: problem.id,
+										testMode: 'examples'
+									})
+								}).then(res => res.json()).then(data => {
+									const normalizedData = {
+										...data,
+										totalScore: data.totalScore || 0,
+										maxScore: data.maxScore || 1,
+										results: data.results || [],
+										totalRuntimeMs: data.totalRuntimeMs || 0,
+										passed: data.passed || 'none'
+									};
+									setTestResults(normalizedData);
+									setIsRunningCode(false);
+								}).catch(e => {
+									console.error('Error testing examples:', e);
+									setIsRunningCode(false);
+								});
+							}}
+							disabled={isRunningCode || !implCode.trim()}
+							className={`px-3 py-2 rounded ${
+								isRunningCode || !implCode.trim() 
+									? "bg-gray-400 text-gray-600 cursor-not-allowed" 
+									: "bg-blue-600 text-white hover:bg-blue-700"
+							}`}
+						>
+							{isRunningCode ? "Testing..." : "Test Examples"}
+						</button>
+						<button 
+							className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700" 
 							onClick={runTests}
+							disabled={isRunningCode}
 						>
 							{submitted ? '✓ Submitted' : 'Submit Solution'}
 						</button>
@@ -694,16 +840,84 @@ export default function WorkspacePage() {
 						</button>
 					</div>
 					{testResults && (
-						<div className="border rounded p-3 bg-gray-50">
-							<h4 className="font-semibold mb-2">Test Results: {testResults.passed}</h4>
-							<div className="space-y-1">
-								{testResults.results.map((r: any) => (
-									<div key={r.testCaseId} className={`flex justify-between ${r.passed ? 'text-green-600' : 'text-red-600'}`}>
-										<span>{r.passed ? '✓' : '✗'} {r.testCaseId}</span>
-										<span>{r.runtimeMs}ms</span>
+						<div className="border rounded p-4 bg-gray-800 text-white">
+							{runMode === 'run' ? (
+								// Run Mode: Show Standard Output
+								<div>
+									<h4 className="font-semibold text-lg mb-3 text-blue-400">Standard Output</h4>
+									<div className="bg-black p-3 rounded border">
+										<pre className="whitespace-pre-wrap text-sm">
+											{testResults.results?.[0]?.actualOutput || 'No output'}
+										</pre>
 									</div>
-								))}
-							</div>
+									{testResults.results?.[0]?.error && (
+										<div className="mt-3 p-3 bg-red-900 border border-red-500 rounded">
+											<h5 className="font-medium text-red-400 mb-1">Error:</h5>
+											<pre className="text-sm text-red-300 whitespace-pre-wrap">
+												{testResults.results[0].error}
+											</pre>
+										</div>
+									)}
+									<div className="mt-3 text-sm text-gray-400">
+										Runtime: {testResults.results?.[0]?.runtimeMs || 0}ms
+									</div>
+								</div>
+							) : (
+								// Test Mode: Show Test Results
+								<div>
+									<div className="flex items-center justify-between mb-3">
+										<h4 className="font-semibold text-lg">
+											Test Results: 
+											<span className={`ml-2 ${
+												testResults.passed === 'all' ? 'text-green-400' : 
+												testResults.passed === 'partial' ? 'text-yellow-400' : 
+												'text-red-400'
+											}`}>
+												{testResults.passed === 'all' ? 'All Passed ✓' : 
+												 testResults.passed === 'partial' ? 'Partial Pass' : 
+												 'Failed'}
+											</span>
+										</h4>
+										<div className="text-sm text-gray-300">
+											Score: {(testResults.totalScore || 0).toFixed(1)}/{(testResults.maxScore || 1).toFixed(1)} 
+											({Math.round(((testResults.totalScore || 0) / (testResults.maxScore || 1)) * 100)}%)
+										</div>
+									</div>
+									
+									<div className="space-y-2">
+										{(testResults.results || []).map((r: any) => (
+											<div key={r.testCaseId} className={`p-2 rounded border-l-4 ${
+												r.passed ? 'bg-green-900 border-green-500' : 'bg-red-900 border-red-500'
+											}`}>
+												<div className="flex justify-between items-start">
+													<div className="flex items-center gap-2">
+														<span className="text-lg">{r.passed ? '✓' : '✗'}</span>
+														<span className="font-medium">{r.testCaseId}</span>
+													</div>
+													<span className="text-sm text-gray-300">{r.runtimeMs}ms</span>
+												</div>
+												
+												{r.error && (
+													<div className="mt-1 text-sm text-red-300">
+														Error: {r.error}
+													</div>
+												)}
+												
+												{!r.passed && r.actualOutput !== undefined && (
+													<div className="mt-1 text-xs text-gray-300">
+														<div>Expected: <code className="bg-gray-700 px-1 rounded">{r.expectedOutput}</code></div>
+														<div>Got: <code className="bg-gray-700 px-1 rounded">{r.actualOutput}</code></div>
+													</div>
+												)}
+											</div>
+										))}
+									</div>
+									
+									<div className="mt-3 text-sm text-gray-400">
+										Total Runtime: {testResults.totalRuntimeMs}ms
+									</div>
+								</div>
+							)}
 						</div>
 					)}
 				</section>
