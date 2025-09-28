@@ -69,6 +69,8 @@ export default function WorkspacePage() {
 	const [isCheckingAccuracy, setIsCheckingAccuracy] = useState<boolean>(false);
 	const [planningFeedback, setPlanningFeedback] = useState<any>(null);
 	const [isCheckingPlanning, setIsCheckingPlanning] = useState<boolean>(false);
+	const [implementationFeedback, setImplementationFeedback] = useState<any>(null);
+	const [isCheckingImplementation, setIsCheckingImplementation] = useState<boolean>(false);
 	const [selectedLanguage, setSelectedLanguage] = useState<string>('python');
 	const [isRunningCode, setIsRunningCode] = useState<boolean>(false);
 	const [runMode, setRunMode] = useState<'run' | 'test'>('run');
@@ -317,6 +319,44 @@ export default function WorkspacePage() {
 			console.error('Error running tests:', e);
 		} finally {
 			setIsRunningCode(false);
+		}
+	}
+
+	async function checkImplementation() {
+		if (!problem || !activePattern || !implCode.trim()) return;
+		
+		setIsCheckingImplementation(true);
+		try {
+			const res = await fetch('/api/feedback/implementation', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					problemId: problem.id,
+					implementationData: {
+						code: implCode,
+						language: selectedLanguage
+					},
+					explorePattern: {
+						...activePattern,
+						cues: Array.from(activePattern.cues)
+					},
+					planningData: {
+						pseudocode: planning.pseudocode,
+						edgeCases: Array.from(planning.edgeCases)
+					}
+				})
+			});
+			
+			if (res.ok) {
+				const data = await res.json();
+				setImplementationFeedback(data.feedback);
+			} else {
+				console.error('Failed to get implementation feedback:', await res.text());
+			}
+		} catch (e) {
+			console.error('Error checking implementation:', e);
+		} finally {
+			setIsCheckingImplementation(false);
 		}
 	}
 
@@ -825,6 +865,17 @@ export default function WorkspacePage() {
 							{isRunningCode ? "Testing..." : "Test Examples"}
 						</button>
 						<button 
+							onClick={checkImplementation}
+							disabled={isCheckingImplementation || !implCode.trim()}
+							className={`px-3 py-2 rounded ${
+								isCheckingImplementation || !implCode.trim() 
+									? "bg-gray-400 text-gray-600 cursor-not-allowed" 
+									: "bg-orange-600 text-white hover:bg-orange-700"
+							}`}
+						>
+							{isCheckingImplementation ? "Checking..." : "Check Implementation"}
+						</button>
+						<button 
 							className="px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700" 
 							onClick={runTests}
 							disabled={isRunningCode}
@@ -918,6 +969,95 @@ export default function WorkspacePage() {
 									</div>
 								</div>
 							)}
+						</div>
+					)}
+
+					{implementationFeedback && (
+						<div className="space-y-4">
+							<h4 className="font-semibold text-orange-600">AI Implementation Feedback</h4>
+							<div className="border rounded p-4 bg-gray-800 text-white">
+								<div className="space-y-3">
+									{/* Code Correctness */}
+									<div className="border-l-4 border-green-500 pl-3">
+										<h5 className="font-medium text-green-400">Code Correctness</h5>
+										<p className={`text-lg font-semibold ${implementationFeedback.codeCorrectness.correct ? 'text-green-400' : 'text-red-400'}`}>
+											{implementationFeedback.codeCorrectness.correct ? '✓ Correct' : '✗ Incorrect'}
+										</p>
+										<p className="text-gray-300 text-sm">{implementationFeedback.codeCorrectness.explanation}</p>
+										{implementationFeedback.codeCorrectness.bugs && implementationFeedback.codeCorrectness.bugs.length > 0 && (
+											<div className="mt-2">
+												<p className="text-red-400 text-sm">Bugs Found:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{implementationFeedback.codeCorrectness.bugs.map((bug: string, i: number) => (
+														<li key={i}>{bug}</li>
+													))}
+												</ul>
+											</div>
+										)}
+									</div>
+
+									{/* Code Quality */}
+									<div className="border-l-4 border-blue-500 pl-3">
+										<h5 className="font-medium text-blue-400">Code Quality</h5>
+										<p className="text-lg font-semibold text-blue-400">Score: {implementationFeedback.codeQuality.score}/100</p>
+										<p className="text-gray-300 text-sm">{implementationFeedback.codeQuality.explanation}</p>
+										{implementationFeedback.codeQuality.improvements && implementationFeedback.codeQuality.improvements.length > 0 && (
+											<div className="mt-2">
+												<p className="text-yellow-400 text-sm">Improvements:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{implementationFeedback.codeQuality.improvements.map((improvement: string, i: number) => (
+														<li key={i}>{improvement}</li>
+													))}
+												</ul>
+											</div>
+										)}
+									</div>
+
+									{/* Efficiency */}
+									<div className="border-l-4 border-purple-500 pl-3">
+										<h5 className="font-medium text-purple-400">Efficiency</h5>
+										<p className="text-lg font-semibold text-purple-400">Score: {implementationFeedback.efficiency.score}/100</p>
+										<p className="text-gray-300 text-sm">{implementationFeedback.efficiency.explanation}</p>
+										{implementationFeedback.efficiency.optimizations && implementationFeedback.efficiency.optimizations.length > 0 && (
+											<div className="mt-2">
+												<p className="text-yellow-400 text-sm">Optimizations:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{implementationFeedback.efficiency.optimizations.map((optimization: string, i: number) => (
+														<li key={i}>{optimization}</li>
+													))}
+												</ul>
+											</div>
+										)}
+									</div>
+
+									{/* Overall Assessment */}
+									<div className="border-l-4 border-orange-500 pl-3">
+										<h5 className="font-medium text-orange-400">Overall Assessment</h5>
+										<p className="text-lg font-semibold text-orange-400">Score: {implementationFeedback.overallAssessment.score}/100</p>
+										<p className="text-gray-300 text-sm">{implementationFeedback.overallAssessment.summary}</p>
+										{implementationFeedback.overallAssessment.strengths.length > 0 && (
+											<div className="mt-2">
+												<p className="text-green-400 text-sm">Strengths:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{implementationFeedback.overallAssessment.strengths.map((strength: string, i: number) => (
+														<li key={i}>{strength}</li>
+													))}
+												</ul>
+											</div>
+										)}
+										{implementationFeedback.overallAssessment.improvements.length > 0 && (
+											<div className="mt-2">
+												<p className="text-yellow-400 text-sm">Improvements:</p>
+												<ul className="list-disc pl-4 text-gray-300 text-sm">
+													{implementationFeedback.overallAssessment.improvements.map((improvement: string, i: number) => (
+														<li key={i}>{improvement}</li>
+													))}
+												</ul>
+											</div>
+										)}
+									</div>
+								</div>
+							</div>
 						</div>
 					)}
 				</section>

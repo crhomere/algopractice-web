@@ -57,6 +57,21 @@ export class FeedbackEngine {
     }
   }
 
+  async evaluateImplementationPhase(
+    problem: any,
+    implementationData: any,
+    explorePattern: any,
+    planningData: any
+  ): Promise<ImplementationFeedback> {
+    try {
+      const aiResponse = await this.aiClient.evaluateImplementationPhase(problem, implementationData, explorePattern, planningData);
+      return this.parseImplementationResponse(aiResponse);
+    } catch (error) {
+      console.error('Error evaluating implementation phase:', error);
+      return this.getDefaultImplementationFeedback();
+    }
+  }
+
   private parseExploreResponse(aiResponse: string): ExploreFeedback {
     try {
       const parsed = JSON.parse(aiResponse);

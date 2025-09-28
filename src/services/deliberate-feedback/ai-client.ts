@@ -182,9 +182,11 @@ Evaluate the plan for correctness, completeness, and implementation readiness. R
     return response.content;
   }
 
-  async evaluateImplementation(
+  async evaluateImplementationPhase(
     problem: any,
-    code: string
+    implementationData: any,
+    explorePattern: any,
+    planningData: any
   ): Promise<string> {
     const prompt: AIPrompt = {
       system: `You are an expert algorithm tutor helping students learn coding interview implementation.
@@ -218,12 +220,21 @@ Evaluate the plan for correctness, completeness, and implementation readiness. R
       Description: ${problem.prompt}
       Difficulty: ${problem.difficulty}
       
-      User's Code:
-      \`\`\`javascript
-      ${code}
+      Student's chosen approach:
+      - Pattern: ${explorePattern.pattern}
+      - Time Complexity: ${explorePattern.timeComplexity}
+      - Space Complexity: ${explorePattern.spaceComplexity}
+      
+      Student's planning:
+      - Pseudocode: ${planningData.pseudocode}
+      - Edge Cases: ${planningData.edgeCases}
+      
+      User's Code (${implementationData.language}):
+      \`\`\`${implementationData.language}
+      ${implementationData.code}
       \`\`\`
       
-      Please evaluate this code implementation and provide detailed feedback.`
+      Please evaluate this code implementation for correctness, quality, and efficiency. Consider how well it matches the chosen pattern and planning.`
     };
 
     const response = await this.callAI(prompt);
