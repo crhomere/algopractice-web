@@ -1,51 +1,95 @@
-# Deliberate Feedback Service
+# Database Migration Guide
 
-AI-powered feedback service for algorithm practice sessions.
+## 🚀 **Migration Steps**
 
-## Features
+### **1. Install Dependencies**
+```bash
+cd algopractice-web
+npm install prisma @prisma/client
+npm install -D tsx
+```
 
-- **Pattern Accuracy**: Validates if the chosen algorithm pattern matches the problem
-- **Complexity Analysis**: Checks time/space complexity correctness and optimality
-- **Brainstorming Direction**: Evaluates if solution approach is on track
-- **Overall Assessment**: Provides comprehensive scoring and feedback
+### **2. Setup Database**
+```bash
+# Initialize Prisma
+npx prisma init
 
-## Setup
+# Set DATABASE_URL in .env.local
+DATABASE_URL="postgresql://username:password@localhost:5432/algopractice"
+```
 
-1. **Install Dependencies**:
-   ```bash
-   npm install openai @types/react @types/react-dom
-   ```
+### **3. Run Migrations**
+```bash
+# Generate Prisma client
+npx prisma generate
 
-2. **Environment Variables**:
-   Create `.env.local` with your OpenAI API key:
-   ```
-   OPENAI_API_KEY=your_openai_api_key_here
-   ```
+# Push schema to database
+npx prisma db push
 
-3. **Usage**:
-   ```typescript
-   import { FeedbackEngine } from '@/services/deliberate-feedback';
-   
-   const engine = new FeedbackEngine();
-   const feedback = await engine.evaluateExploreSolutions(problem, patterns);
-   ```
+# Seed with initial data
+npm run db:seed
+```
 
-## API Endpoints
+### **4. Update API Routes**
+Replace JSON file operations with database calls using `DatabaseService`.
 
-- `POST /api/feedback/explore` - Evaluate explore phase solutions
-- `POST /api/feedback/planning` - Evaluate planning phase (planned)
-- `POST /api/feedback/implementation` - Evaluate implementation (planned)
+## 📊 **Database Benefits**
 
-## Cost Estimation
+### **Performance**
+- **Indexed queries** for fast problem/session lookups
+- **Connection pooling** for concurrent users
+- **Query optimization** with Prisma
 
-- **OpenAI GPT-5**: ~$0.05 per feedback check (estimated)
-- **Monthly estimate**: $75-300 depending on usage
-- **Optimization**: Caching and batching can reduce costs
+### **Scalability**
+- **Horizontal scaling** with read replicas
+- **Caching layer** (Redis) for frequent queries
+- **Background jobs** for analytics
 
-## Next Steps
+### **Data Integrity**
+- **ACID transactions** for session data
+- **Foreign key constraints** for data consistency
+- **Data validation** at database level
 
-1. Add planning phase feedback
-2. Add implementation phase feedback
-3. Implement response caching
-4. Add error handling and fallbacks
-5. Create feedback analytics dashboard
+### **Analytics**
+- **Complex aggregations** for user progress
+- **Pattern analysis** across all users
+- **Performance metrics** and insights
+
+## 🔄 **Migration Strategy**
+
+### **Phase 1: Parallel Operation**
+- Keep JSON files as backup
+- Run database alongside existing system
+- Migrate data gradually
+
+### **Phase 2: Feature Migration**
+- Start with new features (custom problems)
+- Migrate core features (sessions, scoring)
+- Update frontend to use new APIs
+
+### **Phase 3: Complete Migration**
+- Remove JSON file dependencies
+- Add advanced features (analytics, caching)
+- Optimize database queries
+
+## 🛠 **Advanced Features Enabled**
+
+### **User Management**
+- User authentication and profiles
+- Progress tracking across sessions
+- Personalized study plans
+
+### **Analytics Dashboard**
+- Pattern mastery heatmap
+- Interview readiness scoring
+- Performance trends over time
+
+### **Collaboration**
+- Shared custom problems
+- Community challenges
+- Peer learning features
+
+### **Performance Optimization**
+- Database indexing
+- Query caching
+- Background processing

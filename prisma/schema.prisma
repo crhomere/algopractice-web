@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  sessions     PracticeSession[]
+  reflections  Reflection[]
+  scores       PhaseScore[]
+  dailyPlans   DailyPlan[]
+  customProblems CustomProblem[]
+
+  @@map("users")
+}
+
+model Problem {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  difficulty  Difficulty
+  patterns    String[] // Array of pattern names
+  cues        String[] // Array of cue descriptions
+  description String
+  examples    Json     // Array of example objects
+  constraints String[] // Array of constraint strings
+  isCustom    Boolean  @default(false)
+  createdBy   String?  // User ID for custom problems
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  sessions       PracticeSession[]
+  testCases      TestCase[]
+  customProblems CustomProblem[]
+
+  @@map("problems")
+}
+
+model TestCase {
+  id        String  @id @default(cuid())
+  problemId String
+  input     String
+  expected  String
+  weight    Float   @default(1.0)
+  isExample Boolean @default(false)
+
+  // Relationships
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@map("test_cases")
+}
+
+model PracticeSession {
+  id        String   @id @default(cuid())
+  userId    String
+  problemId String
+  mode      PracticeMode
+  status    SessionStatus @default(ACTIVE)
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+
+  // Phase data
+  exploreData    Json? // ExplorePatternData[]
+  planningData   Json? // PlanningData
+  implementationData Json? // ImplementationData
+  reflectionData Json? // ReflectionData
+
+  // Relationships
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  scores  PhaseScore[]
+
+  @@map("practice_sessions")
+}
+
+model PhaseScore {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  phase     Phase
+  score     Float    // 0-100
+  details   Json?    // Detailed scoring breakdown
+  createdAt DateTime @default(now())
+
+  // Relationships
+  session PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("phase_scores")
+}
+
+model Reflection {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String?  // Optional - can be standalone
+  content   String
+  tags      String[] // Tags for categorization
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reflections")
+}
+
+model DailyPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  problems  Json     // Array of problem IDs with metadata
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_plans")
+}
+
+model CustomProblem {
+  id          String   @id @default(cuid())
+  userId      String
+  problemId   String   @unique
+  title       String
+  description String
+  difficulty  Difficulty
+  examples    Json
+  constraints String[]
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@map("custom_problems")
+}
+
+// Enums
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum PracticeMode {
+  TIMED
+  UNTIMED
+  STRICT
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum Phase {
+  EXPLORE
+  PLANNING
+  IMPLEMENTATION
+  REFLECTION
+}

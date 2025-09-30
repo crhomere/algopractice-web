@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-const dataPath = path.join(process.cwd(), '.data', 'problems.json');
-export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const raw = await fs.readFile(dataPath, 'utf8').catch(()=> '[]');
-  const list = JSON.parse(raw);
-  const { id } = await ctx.params;
-  const found = list.find((p: any) => p.id === id || p.slug === id);
-  if (!found) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-  return NextResponse.json(found);
+import { DatabaseService } from '@/lib/database';
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const problem = await DatabaseService.getProblemById(id);
+    
+    if (!problem) {
+      return NextResponse.json(
+        { error: 'Problem not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(problem);
+  } catch (error) {
+    console.error('Error fetching problem:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }

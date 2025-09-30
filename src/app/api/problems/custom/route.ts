@@ -1,34 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import { DatabaseService } from '@/lib/database';
 
 export async function POST(req: NextRequest) {
   try {
-    const customProblem = await req.json();
+    const { userId, title, description, difficulty, examples, constraints } = await req.json();
     
-    // Validate required fields
-    if (!customProblem.title || !customProblem.description) {
+    if (!userId || !title || !description) {
       return NextResponse.json(
-        { error: 'Missing required fields: title and description' },
+        { error: 'Missing required fields: userId, title, description' },
         { status: 400 }
       );
     }
 
-    // Load existing problems
-    const dataPath = path.join(process.cwd(), '.data', 'problems.json');
-    const raw = await fs.readFile(dataPath, 'utf8').catch(() => '[]');
-    const problems = JSON.parse(raw);
+    const problem = await DatabaseService.createCustomProblem({
+      userId,
+      title,
+      description,
+      difficulty: difficulty || 'MEDIUM',
+      examples: examples || [],
+      constraints: constraints || []
+    });
 
-    // Add the custom problem
-    problems.push(customProblem);
-
-    // Save back to file
-    await fs.writeFile(dataPath, JSON.stringify(problems, null, 2));
-
-    return NextResponse.json(customProblem);
-
+    return NextResponse.json(problem);
   } catch (error) {
-    console.error('Error saving custom problem:', error);
+    console.error('Error creating custom problem:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -38,17 +33,22 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Load problems and filter for custom ones
-    const dataPath = path.join(process.cwd(), '.data', 'problems.json');
-    const raw = await fs.readFile(dataPath, 'utf8').catch(() => '[]');
-    const problems = JSON.parse(raw);
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
     
-    const customProblems = problems.filter((p: any) => p.isCustom === true);
-    
-    return NextResponse.json(customProblems);
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Missing userId parameter' },
+        { status: 400 }
+      );
+    }
 
+    const customProblems = await DatabaseService.getProblems();
+    const userCustomProblems = customProblems.filter(p => p.isCustom && p.createdBy === userId);
+    
+    return NextResponse.json(userCustomProblems);
   } catch (error) {
-    console.error('Error loading custom problems:', error);
+    console.error('Error fetching custom problems:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
