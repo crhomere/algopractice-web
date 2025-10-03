@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const problem = await DatabaseService.getProblemById(id);
+    const planningData = await req.json();
     
-    if (!problem) {
-      return NextResponse.json(
-        { error: 'Problem not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(problem);
+    const session = await DatabaseService.updateSessionPhase(id, 'PLANNING', planningData);
+    
+    return NextResponse.json(session);
   } catch (error) {
-    console.error('Error fetching problem:', error);
+    console.error('Error saving planning data:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

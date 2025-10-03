@@ -4,13 +4,13 @@ import { DatabaseService } from '@/lib/database';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const exploreData = await req.json();
+    const reflectionData = await req.json();
     
-    const session = await DatabaseService.updateSessionPhase(id, 'EXPLORE', exploreData);
+    const session = await DatabaseService.updateSessionPhase(id, 'REFLECTION', reflectionData);
     
     return NextResponse.json(session);
   } catch (error) {
-    console.error('Error saving explore data:', error);
+    console.error('Error saving reflection data:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseService } from '@/lib/database';
 
 interface TestCase {
   id: string;
@@ -217,13 +218,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Load problem data to get specific test cases
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    const dataPath = path.join(process.cwd(), '.data', 'problems.json');
-    const raw = await fs.readFile(dataPath, 'utf8').catch(() => '[]');
-    const problems = JSON.parse(raw);
-    const problem = problems.find((p: any) => p.id === problemId);
+    // Load problem data from database
+    const problem = await DatabaseService.getProblemById(problemId);
 
     if (!problem) {
       return NextResponse.json(
@@ -238,11 +234,11 @@ export async function POST(req: NextRequest) {
     if (testMode === 'examples') {
       console.log('Using examples mode');
       // Only run against the examples provided in the problem
-      testCases = problem.examples?.map((example: any, index: number) => ({
-        id: `example-${index + 1}`,
-        input: example.input,
-        expected: example.output,
-        weight: 1.0 / (problem.examples?.length || 1)
+      testCases = problem.testCases?.filter(tc => tc.isExample).map((testCase: any) => ({
+        id: testCase.id,
+        input: testCase.input,
+        expected: testCase.expected,
+        weight: 1.0 / (problem.testCases?.filter(tc => tc.isExample).length || 1)
       })) || [];
     } else if (testMode === 'run') {
       console.log('Using run mode');
@@ -257,11 +253,11 @@ export async function POST(req: NextRequest) {
     } else {
       console.log('Using full test mode');
       // Run full test suite: examples + additional test cases
-      const exampleTests = problem.examples?.map((example: any, index: number) => ({
-        id: `example-${index + 1}`,
-        input: example.input,
-        expected: example.output,
-        weight: 0.3 / (problem.examples?.length || 1)
+      const exampleTests = problem.testCases?.filter(tc => tc.isExample).map((testCase: any) => ({
+        id: testCase.id,
+        input: testCase.input,
+        expected: testCase.expected,
+        weight: 0.3 / (problem.testCases?.filter(tc => tc.isExample).length || 1)
       })) || [];
 
       // Generate additional test cases based on problem constraints

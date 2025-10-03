@@ -4,7 +4,6 @@ import { DatabaseService } from '@/lib/database';
 
 export async function POST(req: NextRequest) {
   try {
-    // Check if OpenAI API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY environment variable is not set');
       return NextResponse.json(
@@ -24,11 +23,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { problemId, explorePatterns } = requestBody;
+    const { problemId, implementationData, explorePattern, planningData } = requestBody;
 
-    if (!problemId || !explorePatterns || !Array.isArray(explorePatterns)) {
+    if (!problemId || !implementationData || !explorePattern || !planningData) {
       return NextResponse.json(
-        { error: 'Missing required fields: problemId and explorePatterns' },
+        { error: 'Missing required fields: problemId, implementationData, explorePattern, and planningData' },
         { status: 400 }
       );
     }
@@ -43,13 +42,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Initialize feedback engine
     const feedbackEngine = new FeedbackEngine();
-
-    // Evaluate all explore patterns
-    const feedback = await feedbackEngine.evaluateExploreSolutions(
+    const feedback = await feedbackEngine.evaluateImplementationPhase(
       problem,
-      explorePatterns
+      implementationData,
+      explorePattern,
+      planningData
     );
 
     return NextResponse.json({
@@ -60,14 +58,9 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in explore feedback API:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined
-    });
+    console.error('Error in implementation feedback API:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

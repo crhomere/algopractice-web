@@ -78,11 +78,29 @@ export default function WorkspacePage() {
 	useEffect(() => {
 		(async () => {
 			if (sessionIdParam) {
-				const res = await fetch(`/api/problems/${sessionIdParam}`);
-				if (res.ok) setProblem(await res.json());
-			}
-			if (!sessionId) {
-				const sres = await fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: sessionIdParam || undefined }) });
+				// sessionIdParam is actually the problem ID from the URL
+				const problemId = sessionIdParam;
+				
+				// Workaround: Fetch all problems and filter client-side
+				const res = await fetch('/api/problems');
+				if (res.ok) {
+					const problems = await res.json();
+					const foundProblem = problems.find((p: any) => p.id === problemId);
+					if (foundProblem) {
+						setProblem(foundProblem);
+					}
+				}
+				
+				// Create session for the problem
+				const sres = await fetch('/api/sessions', { 
+					method: 'POST', 
+					headers: { 'Content-Type': 'application/json' }, 
+					body: JSON.stringify({ 
+						userId: 'temp-user-id', // TODO: Replace with actual user ID from authentication
+						problemId: problemId,
+						mode: practiceMode || 'untimed'
+					}) 
+				});
 				const data = await sres.json();
 				setSessionId(data.id);
 			}
@@ -471,7 +489,7 @@ export default function WorkspacePage() {
 				<div className="border rounded p-4 space-y-4">
 					<div>
 						<h2 className="text-lg font-semibold">{problem.title} <span className="text-sm text-gray-500">({problem.difficulty})</span></h2>
-						<p className="text-sm text-gray-700 mt-2">{problem.prompt}</p>
+						<p className="text-sm text-gray-700 mt-2">{problem.description}</p>
 					</div>
 					
 					{problem.examples && problem.examples.length > 0 && (

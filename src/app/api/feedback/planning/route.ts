@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FeedbackEngine } from '@/services/deliberate-feedback/feedback-engine';
-import fs from 'fs/promises';
-import path from 'path';
+import { DatabaseService } from '@/lib/database';
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,11 +33,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Load problem data
-    const dataPath = path.join(process.cwd(), '.data', 'problems.json');
-    const raw = await fs.readFile(dataPath, 'utf8').catch(() => '[]');
-    const problems = JSON.parse(raw);
-    const problem = problems.find((p: any) => p.id === problemId);
+    // Load problem data from database
+    const problem = await DatabaseService.getProblemById(problemId);
 
     if (!problem) {
       return NextResponse.json(

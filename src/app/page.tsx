@@ -22,7 +22,7 @@ const getDifficultyColor = (difficulty: string) => {
 
 export default function Home() {
   const { data } = useSWR('/api/problems', fetcher);
-  const { data: customProblemsData } = useSWR('/api/problems/custom', fetcher);
+  const { data: customProblemsData } = useSWR('/api/problems/custom?userId=temp-user-id', fetcher);
   const problems = data || [];
   const customProblems = customProblemsData || [];
   const [showPatterns, setShowPatterns] = useState(true);
@@ -45,11 +45,17 @@ export default function Home() {
 
   const handleCustomProblemSubmit = async (customProblem: any) => {
     try {
+      // Add a temporary userId for now (in a real app, this would come from auth)
+      const customProblemWithUser = {
+        ...customProblem,
+        userId: 'temp-user-id' // TODO: Replace with actual user ID from authentication
+      };
+
       // Save the custom problem to the backend
       const response = await fetch('/api/problems/custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customProblem)
+        body: JSON.stringify(customProblemWithUser)
       });
 
       if (response.ok) {
