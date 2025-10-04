@@ -11,6 +11,75 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 // Database service functions
 export class DatabaseService {
+  // User operations
+  static async getUserById(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        createdAt: true
+      }
+    });
+  }
+
+  static async getUserByUsername(username: string) {
+    try {
+      return await prisma.user.findUnique({
+        where: { username }
+      });
+    } catch (error: any) {
+      // If the table doesn't exist yet, return null
+      if (error.message?.includes('Unknown argument') || error.message?.includes('does not exist')) {
+        console.log('User table not found, returning null');
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  static async createUser(data: {
+    username: string;
+    password: string;
+    name?: string | null;
+    email?: string | null;
+  }) {
+    try {
+      return await prisma.user.create({
+        data,
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          createdAt: true
+        }
+      });
+    } catch (error: any) {
+      // If the table doesn't exist yet, throw a helpful error
+      if (error.message?.includes('Unknown argument') || error.message?.includes('does not exist')) {
+        throw new Error('Database schema not initialized. Please run: npx prisma db push');
+      }
+      throw error;
+    }
+  }
+
+  static async updateUser(id: string, data: {
+    name?: string | null;
+    email?: string | null;
+  }) {
+    return prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        createdAt: true
+      }
+    });
+  }
+
   // Problem operations
   static async getProblems() {
     return prisma.problem.findMany({
@@ -79,6 +148,18 @@ export class DatabaseService {
     });
 
     return problem;
+  }
+
+  static async deleteProblem(id: string) {
+    return prisma.problem.delete({
+      where: { id }
+    });
+  }
+
+  static async deleteCustomProblem(problemId: string) {
+    return prisma.customProblem.delete({
+      where: { problemId }
+    });
   }
 
   // Session operations

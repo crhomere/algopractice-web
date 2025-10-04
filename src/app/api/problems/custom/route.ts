@@ -1,22 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
+import { withAuth } from '@/lib/middleware';
+import { getCurrentUser } from '@/lib/auth';
 
-export async function POST(req: NextRequest) {
+export const POST = async (req: NextRequest) => {
   try {
-    const { userId, title, description, difficulty, examples, constraints } = await req.json();
-    
-    if (!userId || !title || !description) {
+    // Check authentication directly
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, title, description' },
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { title, description, difficulty, examples, constraints } = await req.json();
+    
+    if (!title || !description) {
+      return NextResponse.json(
+        { error: 'Title and description are required' },
+        { status: 400 }
+      );
+    }
+
+    // Convert difficulty to uppercase to match Prisma enum
+    const normalizedDifficulty = difficulty?.toUpperCase() || 'MEDIUM';
+    
+    // Validate difficulty value
+    if (!['EASY', 'MEDIUM', 'HARD'].includes(normalizedDifficulty)) {
+      return NextResponse.json(
+        { error: 'Invalid difficulty. Must be Easy, Medium, or Hard' },
         { status: 400 }
       );
     }
 
     const problem = await DatabaseService.createCustomProblem({
-      userId,
+      userId: user.userId,
       title,
       description,
-      difficulty: difficulty || 'MEDIUM',
+      difficulty: normalizedDifficulty as 'EASY' | 'MEDIUM' | 'HARD',
       examples: examples || [],
       constraints: constraints || []
     });
@@ -29,29 +51,58 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
 
-export async function GET(req: NextRequest) {
+export const DELETE = async (req: NextRequest) => {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-    
-    if (!userId) {
+    // Check authentication directly
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json(
-        { error: 'Missing userId parameter' },
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const problemId = searchParams.get('id');
+    
+    if (!problemId) {
+      return NextResponse.json(
+        { error: 'Problem ID is required' },
         { status: 400 }
       );
     }
 
-    const customProblems = await DatabaseService.getProblems();
-    const userCustomProblems = customProblems.filter(p => p.isCustom && p.createdBy === userId);
+    // Get the problem to verify ownership
+    const problem = await DatabaseService.getProblemById(problemId);
+    if (!problem) {
+      return NextResponse.json(
+        { error: 'Problem not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user owns this custom problem
+    if (!problem.isCustom || problem.createdBy !== user.userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized to delete this problem' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the custom problem record first
+    await DatabaseService.deleteCustomProblem(problemId);
     
-    return NextResponse.json(userCustomProblems);
+    // Delete the main problem record
+    await DatabaseService.deleteProblem(problemId);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error fetching custom problems:', error);
+    console.error('Error deleting custom problem:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
-}
+};

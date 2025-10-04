@@ -6,13 +6,15 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
+  username  String   @unique
+  password  String   // hashed password
+  email     String?  @unique // optional for now
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -32,11 +34,11 @@ model Problem {
   slug        String   @unique
   title       String
   difficulty  Difficulty
-  patterns    String[] // Array of pattern names
-  cues        String[] // Array of cue descriptions
+  patterns    Json     // Array of pattern names
+  cues        Json     // Array of cue descriptions
   description String
   examples    Json     // Array of example objects
-  constraints String[] // Array of constraint strings
+  constraints Json     // Array of constraint strings
   isCustom    Boolean  @default(false)
   createdBy   String?  // User ID for custom problems
   createdAt   DateTime @default(now())
@@ -76,7 +78,7 @@ model PracticeSession {
   // Phase data
   exploreData    Json? // ExplorePatternData[]
   planningData   Json? // PlanningData
-  implementationData Json? // ImplementationData
+  implData       Json? // ImplementationData
   reflectionData Json? // ReflectionData
 
   // Relationships
@@ -108,7 +110,7 @@ model Reflection {
   userId    String
   sessionId String?  // Optional - can be standalone
   content   String
-  tags      String[] // Tags for categorization
+  tags      Json     // Tags for categorization
   createdAt DateTime @default(now())
 
   // Relationships
@@ -120,7 +122,7 @@ model Reflection {
 model DailyPlan {
   id        String   @id @default(cuid())
   userId    String
-  date      DateTime @db.Date
+  date      DateTime
   problems  Json     // Array of problem IDs with metadata
   completed Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -140,7 +142,7 @@ model CustomProblem {
   description String
   difficulty  Difficulty
   examples    Json
-  constraints String[]
+  constraints Json
   createdAt   DateTime @default(now())
 
   // Relationships

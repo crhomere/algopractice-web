@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PracticeModeModal } from '@/components/PracticeModeModal';
 import { CustomProblemModal } from '@/components/CustomProblemModal';
+import { useAuth } from '@/lib/auth-context';
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 const getDifficultyColor = (difficulty: string) => {
@@ -21,8 +22,12 @@ const getDifficultyColor = (difficulty: string) => {
 };
 
 export default function Home() {
+  const { user } = useAuth();
   const { data } = useSWR('/api/problems', fetcher);
-  const { data: customProblemsData } = useSWR('/api/problems/custom?userId=temp-user-id', fetcher);
+  const { data: customProblemsData } = useSWR(
+    user ? '/api/problems/custom' : null, 
+    fetcher
+  );
   const problems = data || [];
   const customProblems = customProblemsData || [];
   const [showPatterns, setShowPatterns] = useState(true);
@@ -45,17 +50,11 @@ export default function Home() {
 
   const handleCustomProblemSubmit = async (customProblem: any) => {
     try {
-      // Add a temporary userId for now (in a real app, this would come from auth)
-      const customProblemWithUser = {
-        ...customProblem,
-        userId: 'temp-user-id' // TODO: Replace with actual user ID from authentication
-      };
-
-      // Save the custom problem to the backend
+      // Save the custom problem to the backend (userId will be handled by auth middleware)
       const response = await fetch('/api/problems/custom', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customProblemWithUser)
+        body: JSON.stringify(customProblem)
       });
 
       if (response.ok) {
@@ -68,6 +67,29 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error saving custom problem:', error);
+    }
+  };
+
+  const handleDeleteCustomProblem = async (problemId: string) => {
+    if (!confirm('Are you sure you want to delete this custom problem? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/problems/custom?id=${problemId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Refresh the custom problems list
+        window.location.reload();
+      } else {
+        console.error('Failed to delete custom problem');
+        alert('Failed to delete custom problem. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting custom problem:', error);
+      alert('Error deleting custom problem. Please try again.');
     }
   };
   
@@ -162,9 +184,8 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {customProblems.map((p: any) => (
-              <button
+              <div
                 key={p.id}
-                onClick={() => handleProblemClick(p)}
                 className="block p-4 border rounded-lg hover:shadow-md transition-shadow bg-gray-800 hover:bg-gray-700 text-white text-left w-full"
               >
                 <div className="space-y-2">
@@ -180,17 +201,33 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  {p.prompt && (
+                  {p.description && (
                     <p className="text-sm text-gray-300 line-clamp-2">
-                      {p.prompt.substring(0, 100)}...
+                      {p.description.substring(0, 100)}...
                     </p>
                   )}
                   
-                  <div className="text-xs text-gray-400">
-                    Created: {new Date(p.createdAt).toLocaleDateString()}
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-400">
+                      Created: {new Date(p.createdAt).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleProblemClick(p)}
+                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Practice
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCustomProblem(p.id)}
+                        className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>

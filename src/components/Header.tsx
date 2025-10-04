@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import UserMenu from './UserMenu';
 
 export function Header() {
   return (
@@ -41,6 +42,8 @@ export function Header() {
             Study Plan
           </Link>
         </nav>
+        
+        <UserMenu />
       </div>
     </header>
   );

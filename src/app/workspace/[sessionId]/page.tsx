@@ -6,6 +6,7 @@ import { PhaseStepper } from "@/components/PhaseStepper";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ExplorePattern, ExplorePatternData } from "@/components/ExplorePattern";
 import { TimeoutModal } from "@/components/TimeoutModal";
+import { useAuth } from "@/lib/auth-context";
 
 const MIN_SECONDS = {
 	explore: 60 * 2,
@@ -37,6 +38,7 @@ const PATTERN_CUES = {
 type Phase = "explore"|"planning"|"implementation"|"reflection";
 
 export default function WorkspacePage() {
+	const { user } = useAuth();
 	const params = useParams<{ sessionId: string }>();
 	const searchParams = useSearchParams();
 	const sessionIdParam = (params?.sessionId as string) || "";
@@ -96,7 +98,7 @@ export default function WorkspacePage() {
 					method: 'POST', 
 					headers: { 'Content-Type': 'application/json' }, 
 					body: JSON.stringify({ 
-						userId: 'temp-user-id', // TODO: Replace with actual user ID from authentication
+						userId: user?.id || 'temp-user-id', // Use authenticated user ID or fallback
 						problemId: problemId,
 						mode: practiceMode || 'untimed'
 					}) 
