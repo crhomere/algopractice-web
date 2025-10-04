@@ -105,12 +105,14 @@ export default function Home() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">Problems</h2>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCustomProblemModalOpen(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Use Your Own Algorithm
-            </button>
+            {user && (
+              <button
+                onClick={() => setCustomProblemModalOpen(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Use Your Own Algorithm
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-600">Show patterns</label>
               <button
@@ -176,7 +178,7 @@ export default function Home() {
       </div>
 
       {/* Custom Problems Section */}
-      {customProblems.length > 0 && (
+      {user && customProblems.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Your Custom Problems</h2>

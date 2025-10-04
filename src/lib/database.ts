@@ -83,6 +83,25 @@ export class DatabaseService {
   // Problem operations
   static async getProblems() {
     return prisma.problem.findMany({
+      where: {
+        isCustom: false // Only return non-custom problems
+      },
+      include: {
+        testCases: true,
+        _count: {
+          select: { sessions: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  static async getCustomProblems(userId: string) {
+    return prisma.problem.findMany({
+      where: {
+        isCustom: true,
+        createdBy: userId
+      },
       include: {
         testCases: true,
         _count: {

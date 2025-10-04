@@ -53,6 +53,29 @@ export const POST = async (req: NextRequest) => {
   }
 };
 
+export const GET = async (req: NextRequest) => {
+  try {
+    // Check authentication directly
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const customProblems = await DatabaseService.getCustomProblems(user.userId);
+    
+    return NextResponse.json(customProblems);
+  } catch (error) {
+    console.error('Error fetching custom problems:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+};
+
 export const DELETE = async (req: NextRequest) => {
   try {
     // Check authentication directly
