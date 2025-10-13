@@ -1,0 +1,9 @@
+    // Pattern coverage
+    const patternCounts = sessions.reduce((acc, session) => {
+      if (session.problem.patterns) {
+        session.problem.patterns.forEach(pattern => {
+          acc[pattern] = (acc[pattern] || 0) + 1;
+        });
+      }
+      return acc;
+    }, {} as Record<string, number>);

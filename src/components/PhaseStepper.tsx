@@ -1,7 +1,7 @@
-export type Phase = "explore" | "planning" | "implementation" | "reflection";
+export type Phase = "explore" | "planning" | "implementation" | "reflection" | "review";
 
 export function PhaseStepper({ phase }: { phase: Phase }) {
-  const steps: Phase[] = ["explore","planning","implementation","reflection"];
+  const steps: Phase[] = ["explore","planning","implementation","reflection","review"];
   return (
     <div className="flex items-center gap-2 text-sm">
       {steps.map((p, i) => (

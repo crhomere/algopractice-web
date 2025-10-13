@@ -4,7 +4,7 @@ import { DatabaseService } from '@/lib/database';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: sessionId } = await params;
-    const { notes } = await req.json();
+    const { pseudocode, edgeCases, timeComplexity, spaceComplexity } = await req.json();
 
     if (!sessionId) {
       return NextResponse.json(
@@ -13,16 +13,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    console.log('Updating reflection phase for session:', sessionId, 'with notes:', notes);
-
-    // Update the session with reflection data
-    const session = await DatabaseService.updateSessionReflection(sessionId, {
-      notes
+    // Update the session with planning data
+    const session = await DatabaseService.updateSessionPlanning(sessionId, {
+      pseudocode,
+      edgeCases: edgeCases || [],
+      timeComplexity,
+      spaceComplexity
     });
 
     return NextResponse.json(session);
   } catch (error) {
-    console.error('Error updating reflection phase:', error);
+    console.error('Error updating planning phase:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

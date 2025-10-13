@@ -6,6 +6,7 @@ import { PhaseStepper } from "@/components/PhaseStepper";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ExplorePattern, ExplorePatternData } from "@/components/ExplorePattern";
 import { TimeoutModal } from "@/components/TimeoutModal";
+import { ReviewDashboard } from "@/components/ReviewDashboard";
 import { useAuth } from "@/lib/auth-context";
 
 const MIN_SECONDS = {
@@ -13,6 +14,7 @@ const MIN_SECONDS = {
 	planning: 60 * 5,
 	implementation: 60 * 10,
 	reflection: 60 * 2,
+	review: 0, // No minimum time for review phase
 };
 
 // All available patterns with their associated cues
@@ -35,7 +37,7 @@ const PATTERN_CUES = {
 	"Brute Force": ["try all possibilities", "nested loops", "exhaustive search", "simple but inefficient"]
 };
 
-type Phase = "explore"|"planning"|"implementation"|"reflection";
+type Phase = "explore"|"planning"|"implementation"|"reflection"|"review";
 
 export default function WorkspacePage() {
 	const { user } = useAuth();
@@ -94,6 +96,7 @@ export default function WorkspacePage() {
 				}
 				
 				// Create session for the problem
+				console.log('Creating session with:', { userId: user?.id, problemId, mode: practiceMode });
 				const sres = await fetch('/api/sessions', { 
 					method: 'POST', 
 					headers: { 'Content-Type': 'application/json' }, 
@@ -103,8 +106,15 @@ export default function WorkspacePage() {
 						mode: practiceMode || 'untimed'
 					}) 
 				});
+				console.log('Session creation response status:', sres.status);
 				const data = await sres.json();
-				setSessionId(data.id);
+				console.log('Session creation response data:', data);
+				if (data.id) {
+					setSessionId(data.id);
+					console.log('Session ID set to:', data.id);
+				} else {
+					console.error('No session ID in response:', data);
+				}
 			}
 		})();
 	// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,12 +201,13 @@ export default function WorkspacePage() {
 				break;
 		}
 		
-		// Distribute time across phases: 25% explore, 35% planning, 40% implementation (reflection is untimed)
+		// Distribute time across phases: 25% explore, 35% planning, 40% implementation (reflection and review are untimed)
 		const phaseTimeMinutes = {
 			explore: Math.floor(totalMinutes * 0.25),
 			planning: Math.floor(totalMinutes * 0.35),
 			implementation: Math.floor(totalMinutes * 0.4),
-			reflection: null // Reflection phase is untimed
+			reflection: null, // Reflection phase is untimed
+			review: null // Review phase is untimed
 		};
 		
 		const phaseTime = phaseTimeMinutes[phase];
@@ -449,6 +460,7 @@ export default function WorkspacePage() {
 		if (phase === 'explore') { await persistPhase('explore'); setPhase('planning'); }
 		else if (phase === 'planning') { await persistPhase('planning'); setPhase('implementation'); }
 		else if (phase === 'implementation') { await persistPhase('implementation'); setPhase('reflection'); }
+		else if (phase === 'reflection') { await persistPhase('reflection'); setPhase('review'); }
 		else { await persistPhase('reflection'); }
 		setPhaseStart(Date.now());
 	}
@@ -457,6 +469,7 @@ export default function WorkspacePage() {
 		if (phase === 'planning') { setPhase('explore'); }
 		else if (phase === 'implementation') { setPhase('planning'); }
 		else if (phase === 'reflection') { setPhase('implementation'); }
+		else if (phase === 'review') { setPhase('reflection'); }
 		setPhaseStart(Date.now());
 	}
 
@@ -636,7 +649,7 @@ export default function WorkspacePage() {
 												<div className="mt-2">
 													<p className="text-green-400 text-sm">Strengths:</p>
 													<ul className="list-disc pl-4 text-gray-300 text-sm">
-														{feedback.overallAssessment.strengths.map((strength, i) => (
+                                                                                                                {feedback.overallAssessment.strengths.map((strength: string, i: number) => (
 															<li key={i}>{strength}</li>
 														))}
 													</ul>
@@ -646,7 +659,7 @@ export default function WorkspacePage() {
 												<div className="mt-2">
 													<p className="text-yellow-400 text-sm">Improvements:</p>
 													<ul className="list-disc pl-4 text-gray-300 text-sm">
-														{feedback.overallAssessment.improvements.map((improvement, i) => (
+                                                                                                                {feedback.overallAssessment.improvements.map((improvement: string, i: number) => (
 															<li key={i}>{improvement}</li>
 														))}
 													</ul>
@@ -1094,8 +1107,24 @@ export default function WorkspacePage() {
 						>
 							← Back
 						</button>
-						<button disabled={!canAdvance} className={`px-3 py-2 rounded ${canAdvance?"bg-green-600 text-white":"bg-gray-200 text-gray-500"}`} onClick={goNext}>Complete</button>
+						<button disabled={!canAdvance} className={`px-3 py-2 rounded ${canAdvance?"bg-green-600 text-white":"bg-gray-200 text-gray-500"}`} onClick={goNext}>Review Session</button>
 					</div>
+				</section>
+			)}
+
+			{phase === 'review' && (
+				<section className="space-y-3">
+					<div className="flex items-center justify-between">
+						<h3 className="font-semibold">AI Review</h3>
+						<button 
+							onClick={goBack}
+							className="px-3 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+						>
+							← Back
+						</button>
+					</div>
+					{console.log('Passing sessionId to ReviewDashboard:', sessionId)}
+					<ReviewDashboard sessionId={sessionId} />
 				</section>
 			)}
 			</div>

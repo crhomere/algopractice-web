@@ -46,10 +46,12 @@ export class FeedbackEngine {
 
   async evaluateImplementation(
     problem: any,
-    code: string
+    implementationData: any,
+    explorePattern: any,
+    planningData: any
   ): Promise<ImplementationFeedback> {
     try {
-      const aiResponse = await this.aiClient.evaluateImplementation(problem, code);
+      const aiResponse = await this.aiClient.evaluateImplementationPhase(problem, implementationData, explorePattern, planningData);
       return this.parseImplementationResponse(aiResponse);
     } catch (error) {
       console.error('Error evaluating implementation:', error);

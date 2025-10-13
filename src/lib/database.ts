@@ -80,6 +80,291 @@ export class DatabaseService {
     });
   }
 
+  // Session operations
+  static async createSession(data: {
+    userId: string;
+    problemId: string;
+    mode: 'TIMED' | 'UNTIMED' | 'STRICT';
+  }) {
+    return prisma.practiceSession.create({
+      data: {
+        userId: data.userId,
+        problemId: data.problemId,
+        mode: data.mode.toUpperCase() as 'TIMED' | 'UNTIMED' | 'STRICT',
+        phaseTimings: {},
+        exploreData: [],
+        planningData: null,
+        implData: null,
+        reflectionData: null,
+        scores: {},
+        totalScore: 0,
+        completedAt: null
+      }
+    });
+  }
+
+  static async getSessionById(id: string) {
+    return prisma.practiceSession.findUnique({
+      where: { id },
+      include: {
+        problem: true,
+        user: true
+      }
+    });
+  }
+
+  static async updateSessionPlanning(sessionId: string, data: {
+    pseudocode: string;
+    edgeCases: string[];
+    timeComplexity?: string;
+    spaceComplexity?: string;
+  }) {
+    return prisma.practiceSession.update({
+      where: { id: sessionId },
+      data: {
+        planningData: {
+          pseudocode: data.pseudocode,
+          edgeCases: data.edgeCases,
+          timeComplexity: data.timeComplexity,
+          spaceComplexity: data.spaceComplexity
+        }
+      },
+      include: {
+        problem: true,
+        user: true
+      }
+    });
+  }
+
+  static async updateSessionExplore(sessionId: string, data: {
+    explorePatterns: any[];
+  }) {
+    return prisma.practiceSession.update({
+      where: { id: sessionId },
+      data: {
+        exploreData: data.explorePatterns
+      },
+      include: {
+        problem: true,
+        user: true
+      }
+    });
+  }
+
+  static async updateSessionImplementation(sessionId: string, data: {
+    language: string;
+    sourceCode: string;
+  }) {
+    return prisma.practiceSession.update({
+      where: { id: sessionId },
+      data: {
+        implData: {
+          language: data.language,
+          sourceCode: data.sourceCode
+        }
+      },
+      include: {
+        problem: true,
+        user: true
+      }
+    });
+  }
+
+  static async updateSessionReflection(sessionId: string, data: {
+    notes: string;
+  }) {
+    return prisma.practiceSession.update({
+      where: { id: sessionId },
+      data: {
+        reflectionData: {
+          notes: data.notes
+        }
+      },
+      include: {
+        problem: true,
+        user: true
+      }
+    });
+  }
+
+  // Review operations
+  static async createReviewSession(data: {
+    sessionId: string;
+    userId: string;
+    phaseTimings: Record<string, number>;
+    totalTime: number;
+    aiAnalysis: any;
+    strengths: string[];
+    weaknesses: string[];
+    recommendations: string[];
+    patternAccuracy: number;
+    implementationScore: number;
+    overallScore: number;
+  }) {
+    return prisma.reviewSession.create({
+      data: {
+        sessionId: data.sessionId,
+        userId: data.userId,
+        phaseTimings: data.phaseTimings,
+        totalTime: data.totalTime,
+        aiAnalysis: data.aiAnalysis,
+        strengths: data.strengths,
+        weaknesses: data.weaknesses,
+        recommendations: data.recommendations,
+        patternAccuracy: data.patternAccuracy,
+        implementationScore: data.implementationScore,
+        overallScore: data.overallScore
+      }
+    });
+  }
+
+  static async getReviewSession(sessionId: string) {
+    return prisma.reviewSession.findUnique({
+      where: { sessionId },
+      include: {
+        session: {
+          include: {
+            problem: true,
+            user: true
+          }
+        },
+        user: true
+      }
+    });
+  }
+
+  static async getUserReviewSessions(userId: string) {
+    return prisma.reviewSession.findMany({
+      where: { userId },
+      include: {
+        session: {
+          include: {
+            problem: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  // User Analytics operations
+  static async createOrUpdateUserAnalytics(userId: string, data: {
+    patternScores: Record<string, number>;
+    patternAttempts: Record<string, number>;
+    avgPhaseTimes: Record<string, number>;
+    speedImprovement: Record<string, number>;
+    commonMistakes: string[];
+    improvementAreas: string[];
+    totalSessions: number;
+    avgSessionScore: number;
+    readinessScore: number;
+    lastUpdated: Date;
+  }) {
+    return prisma.userAnalytics.upsert({
+      where: { userId },
+      update: data,
+      create: {
+        userId,
+        ...data
+      }
+    });
+  }
+
+  static async getUserAnalytics(userId: string) {
+    return prisma.userAnalytics.findUnique({
+      where: { userId }
+    });
+  }
+
+  // Review operations
+  static async createReviewSession(data: {
+    sessionId: string;
+    userId: string;
+    phaseTimings: Record<string, number>;
+    totalTime: number;
+    aiAnalysis: any;
+    strengths: string[];
+    weaknesses: string[];
+    recommendations: string[];
+    patternAccuracy: number;
+    implementationScore: number;
+    overallScore: number;
+  }) {
+    return prisma.reviewSession.create({
+      data: {
+        sessionId: data.sessionId,
+        userId: data.userId,
+        phaseTimings: data.phaseTimings,
+        totalTime: data.totalTime,
+        aiAnalysis: data.aiAnalysis,
+        strengths: data.strengths,
+        weaknesses: data.weaknesses,
+        recommendations: data.recommendations,
+        patternAccuracy: data.patternAccuracy,
+        implementationScore: data.implementationScore,
+        overallScore: data.overallScore
+      }
+    });
+  }
+
+  static async getReviewSession(sessionId: string) {
+    return prisma.reviewSession.findUnique({
+      where: { sessionId },
+      include: {
+        session: {
+          include: {
+            problem: true,
+            user: true
+          }
+        },
+        user: true
+      }
+    });
+  }
+
+  static async getUserReviewSessions(userId: string) {
+    return prisma.reviewSession.findMany({
+      where: { userId },
+      include: {
+        session: {
+          include: {
+            problem: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  // User Analytics operations
+  static async createOrUpdateUserAnalytics(userId: string, data: {
+    patternScores: Record<string, number>;
+    patternAttempts: Record<string, number>;
+    avgPhaseTimes: Record<string, number>;
+    speedImprovement: Record<string, number>;
+    commonMistakes: string[];
+    improvementAreas: string[];
+    totalSessions: number;
+    avgSessionScore: number;
+    readinessScore: number;
+    lastUpdated: Date;
+  }) {
+    return prisma.userAnalytics.upsert({
+      where: { userId },
+      update: data,
+      create: {
+        userId,
+        ...data
+      }
+    });
+  }
+
+  static async getUserAnalytics(userId: string) {
+    return prisma.userAnalytics.findUnique({
+      where: { userId }
+    });
+  }
+
   // Problem operations
   static async getProblems() {
     return prisma.problem.findMany({
@@ -178,6 +463,110 @@ export class DatabaseService {
   static async deleteCustomProblem(problemId: string) {
     return prisma.customProblem.delete({
       where: { problemId }
+    });
+  }
+
+  // Review operations
+  static async createReviewSession(data: {
+    sessionId: string;
+    userId: string;
+    phaseTimings: Record<string, number>;
+    totalTime: number;
+    aiAnalysis: any;
+    strengths: any[];
+    weaknesses: any[];
+    recommendations: any;
+    patternAccuracy: number;
+    implementationScore: number;
+    overallScore: number;
+  }) {
+    return prisma.reviewSession.create({
+      data: {
+        sessionId: data.sessionId,
+        userId: data.userId,
+        phaseTimings: data.phaseTimings,
+        totalTime: data.totalTime,
+        aiAnalysis: data.aiAnalysis,
+        strengths: data.strengths,
+        weaknesses: data.weaknesses,
+        recommendations: data.recommendations,
+        patternAccuracy: data.patternAccuracy,
+        implementationScore: data.implementationScore,
+        overallScore: data.overallScore
+      }
+    });
+  }
+
+  static async getReviewSession(sessionId: string) {
+    return prisma.reviewSession.findUnique({
+      where: { sessionId },
+      include: {
+        session: {
+          include: {
+            problem: true
+          }
+        }
+      }
+    });
+  }
+
+  static async getUserReviewSessions(userId: string) {
+    return prisma.reviewSession.findMany({
+      where: { userId },
+      include: {
+        session: {
+          include: {
+            problem: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  // Analytics operations
+  static async createOrUpdateUserAnalytics(userId: string, data: {
+    patternScores: Record<string, number>;
+    patternAttempts: Record<string, number>;
+    avgPhaseTimes: Record<string, number>;
+    speedImprovement: number[];
+    commonMistakes: string[];
+    improvementAreas: string[];
+    totalSessions: number;
+    avgSessionScore: number;
+    readinessScore: number;
+  }) {
+    return prisma.userAnalytics.upsert({
+      where: { userId },
+      update: {
+        patternScores: data.patternScores,
+        patternAttempts: data.patternAttempts,
+        avgPhaseTimes: data.avgPhaseTimes,
+        speedImprovement: data.speedImprovement,
+        commonMistakes: data.commonMistakes,
+        improvementAreas: data.improvementAreas,
+        totalSessions: data.totalSessions,
+        avgSessionScore: data.avgSessionScore,
+        readinessScore: data.readinessScore
+      },
+      create: {
+        userId,
+        patternScores: data.patternScores,
+        patternAttempts: data.patternAttempts,
+        avgPhaseTimes: data.avgPhaseTimes,
+        speedImprovement: data.speedImprovement,
+        commonMistakes: data.commonMistakes,
+        improvementAreas: data.improvementAreas,
+        totalSessions: data.totalSessions,
+        avgSessionScore: data.avgSessionScore,
+        readinessScore: data.readinessScore
+      }
+    });
+  }
+
+  static async getUserAnalytics(userId: string) {
+    return prisma.userAnalytics.findUnique({
+      where: { userId }
     });
   }
 

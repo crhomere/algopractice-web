@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const session = await DatabaseService.createSession({
       userId,
       problemId,
-      mode: mode as 'TIMED' | 'UNTIMED' | 'STRICT'
+      mode: mode.toUpperCase() as 'TIMED' | 'UNTIMED' | 'STRICT'
     });
 
     return NextResponse.json(session);

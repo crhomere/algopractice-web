@@ -25,6 +25,8 @@ model User {
   scores       PhaseScore[]
   dailyPlans   DailyPlan[]
   customProblems CustomProblem[]
+  reviewSessions ReviewSession[]
+  analytics    UserAnalytics?
 
   @@map("users")
 }
@@ -85,6 +87,7 @@ model PracticeSession {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
   scores  PhaseScore[]
+  review  ReviewSession?
 
   @@map("practice_sessions")
 }
@@ -150,6 +153,64 @@ model CustomProblem {
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
   @@map("custom_problems")
+}
+
+model ReviewSession {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  userId      String
+  
+  // Timing Analysis
+  phaseTimings Json    // { explore: 120, planning: 300, implementation: 600 }
+  totalTime    Int     // Total seconds
+  
+  // AI Analysis Results
+  aiAnalysis   Json    // Comprehensive AI feedback
+  strengths    Json    // Array of identified strengths
+  weaknesses   Json    // Array of identified weaknesses
+  recommendations Json // Specific improvement suggestions
+  
+  // Performance Metrics
+  patternAccuracy    Float  // 0-1 score
+  implementationScore Float // 0-1 score
+  overallScore       Float  // 0-1 score
+  
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  session PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("review_sessions")
+}
+
+model UserAnalytics {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  
+  // Pattern Performance
+  patternScores    Json // { "Two Pointers": 0.85, "DP": 0.62, ... }
+  patternAttempts   Json // Count of attempts per pattern
+  
+  // Timing Analytics
+  avgPhaseTimes     Json // Average time per phase
+  speedImprovement  Json // Trend over time
+  
+  // Weakness Tracking
+  commonMistakes    Json // Most frequent error types
+  improvementAreas Json // Areas needing work
+  
+  // Overall Metrics
+  totalSessions     Int
+  avgSessionScore   Float
+  readinessScore    Float // 0-100
+  
+  lastUpdated DateTime @updatedAt
+  
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_analytics")
 }
 
 // Enums

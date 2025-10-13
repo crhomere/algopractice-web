@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { DockerExecutionResult, JudgeRequest, JudgeResponse, TestCase, ExecutionResult, RunnerConfig } from '../types/index.js';
+import { DockerExecutionResult, JudgeRequest, JudgeResponse, TestCase, ExecutionResult, RunnerConfig } from './types';
 
 export class DockerJudge {
   private configs: Map<string, RunnerConfig> = new Map();

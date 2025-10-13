@@ -3,7 +3,7 @@
  * CLI script for building and testing Docker judge images
  */
 
-import { DockerJudge } from './judge.js';
+import { DockerJudge } from './judge';
 
 async function main() {
   const command = process.argv[2];
@@ -48,7 +48,7 @@ async function main() {
         break;
     }
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

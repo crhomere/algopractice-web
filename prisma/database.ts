@@ -189,10 +189,10 @@ export class DatabaseService {
 
     // Pattern coverage
     const patternCounts = sessions.reduce((acc, session) => {
-      session.problem.patterns.forEach(pattern => {
+      if (session.problem.patterns && Array.isArray(session.problem.patterns)) { (session.problem.patterns as string[]).forEach(pattern => {
         acc[pattern] = (acc[pattern] || 0) + 1;
       });
-      return acc;
+      } return acc;
     }, {} as Record<string, number>);
 
     return {
