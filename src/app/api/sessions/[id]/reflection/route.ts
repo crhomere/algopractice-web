@@ -4,7 +4,7 @@ import { DatabaseService } from '@/lib/database';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: sessionId } = await params;
-    const { notes } = await req.json();
+    const { notes, timeSpent } = await req.json();
 
     if (!sessionId) {
       return NextResponse.json(
@@ -13,11 +13,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    console.log('Updating reflection phase for session:', sessionId, 'with notes:', notes);
+    console.log('Updating reflection phase for session:', sessionId, 'with data:', { notes, timeSpent });
 
-    // Update the session with reflection data
+    // Update the session with reflection data and timing
     const session = await DatabaseService.updateSessionReflection(sessionId, {
-      notes
+      notes,
+      timeSpent
     });
 
     return NextResponse.json(session);

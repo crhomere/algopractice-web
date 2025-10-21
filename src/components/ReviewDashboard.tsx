@@ -185,7 +185,7 @@ export function ReviewDashboard({ sessionId }: ReviewDashboardProps) {
         </h2>
         <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
           <span>Difficulty: {reviewData.session.problem.difficulty}</span>
-          <span>Overall Score: {Math.round(reviewData.overallScore * 100)}%</span>
+          <span>Overall Score: {Math.round(reviewData.overallScore > 1 ? reviewData.overallScore : reviewData.overallScore * 100)}%</span>
           <span>Total Time: {Math.round(reviewData.totalTime / 60)} minutes</span>
         </div>
       </div>
@@ -214,7 +214,7 @@ export function ReviewDashboard({ sessionId }: ReviewDashboardProps) {
           </div>
         </div>
         <div className="text-sm text-gray-300">
-          <p className="font-semibold mb-2">Efficiency Score: {Math.round(aiAnalysis.timingAnalysis.efficiencyScore * 100)}%</p>
+          <p className="font-semibold mb-2">Efficiency Score: {Math.round(aiAnalysis.timingAnalysis.efficiencyScore > 1 ? aiAnalysis.timingAnalysis.efficiencyScore : aiAnalysis.timingAnalysis.efficiencyScore * 100)}%</p>
           <ul className="space-y-1">
             {aiAnalysis.timingAnalysis.insights.map((insight, i) => (
               <li key={i} className="flex items-start gap-2">
@@ -234,11 +234,11 @@ export function ReviewDashboard({ sessionId }: ReviewDashboardProps) {
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div 
               className="bg-green-500 h-2 rounded-full" 
-              style={{ width: `${aiAnalysis.patternAnalysis.accuracy * 100}%` }}
+              style={{ width: `${aiAnalysis.patternAnalysis.accuracy > 1 ? aiAnalysis.patternAnalysis.accuracy : aiAnalysis.patternAnalysis.accuracy * 100}%` }}
             ></div>
           </div>
           <div className="text-sm text-gray-300 mt-1">
-            {Math.round(aiAnalysis.patternAnalysis.accuracy * 100)}%
+            {Math.round(aiAnalysis.patternAnalysis.accuracy > 1 ? aiAnalysis.patternAnalysis.accuracy : aiAnalysis.patternAnalysis.accuracy * 100)}%
           </div>
         </div>
         

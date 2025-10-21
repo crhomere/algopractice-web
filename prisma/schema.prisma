@@ -82,6 +82,9 @@ model PracticeSession {
   planningData   Json? // PlanningData
   implData       Json? // ImplementationData
   reflectionData Json? // ReflectionData
+  phaseTimings   Json? // { explore: number, planning: number, implementation: number, reflection: number }
+  totalScore     Float?
+  phaseScores    Json? // Phase scores
 
   // Relationships
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

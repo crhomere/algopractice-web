@@ -138,11 +138,56 @@ export class DatabaseService {
 
   static async updateSessionExplore(sessionId: string, data: {
     explorePatterns: any[];
+    timeSpent?: number;
   }) {
+    // Get current session to preserve existing phaseTimings
+    const currentSession = await prisma.practiceSession.findUnique({
+      where: { id: sessionId },
+      select: { phaseTimings: true }
+    });
+
+    const currentTimings = currentSession?.phaseTimings as any || {};
+    
     return prisma.practiceSession.update({
       where: { id: sessionId },
       data: {
-        exploreData: data.explorePatterns
+        exploreData: data.explorePatterns,
+        phaseTimings: {
+          ...currentTimings,
+          explore: data.timeSpent || 0
+        }
+      },
+      include: {
+        problem: true,
+        user: true
+      }
+    });
+  }
+
+  static async updateSessionPlanning(sessionId: string, data: {
+    pseudocode: string;
+    edgeCases: string[];
+    timeSpent?: number;
+  }) {
+    // Get current session to preserve existing phaseTimings
+    const currentSession = await prisma.practiceSession.findUnique({
+      where: { id: sessionId },
+      select: { phaseTimings: true }
+    });
+
+    const currentTimings = currentSession?.phaseTimings as any || {};
+    
+    return prisma.practiceSession.update({
+      where: { id: sessionId },
+      data: {
+        planningData: {
+          pseudocode: data.pseudocode,
+          edgeCases: data.edgeCases
+        },
+        phaseTimings: {
+          ...currentTimings,
+          planning: data.timeSpent || 0
+        }
       },
       include: {
         problem: true,
@@ -154,13 +199,26 @@ export class DatabaseService {
   static async updateSessionImplementation(sessionId: string, data: {
     language: string;
     sourceCode: string;
+    timeSpent?: number;
   }) {
+    // Get current session to preserve existing phaseTimings
+    const currentSession = await prisma.practiceSession.findUnique({
+      where: { id: sessionId },
+      select: { phaseTimings: true }
+    });
+
+    const currentTimings = currentSession?.phaseTimings as any || {};
+    
     return prisma.practiceSession.update({
       where: { id: sessionId },
       data: {
         implData: {
           language: data.language,
           sourceCode: data.sourceCode
+        },
+        phaseTimings: {
+          ...currentTimings,
+          implementation: data.timeSpent || 0
         }
       },
       include: {
@@ -172,12 +230,25 @@ export class DatabaseService {
 
   static async updateSessionReflection(sessionId: string, data: {
     notes: string;
+    timeSpent?: number;
   }) {
+    // Get current session to preserve existing phaseTimings
+    const currentSession = await prisma.practiceSession.findUnique({
+      where: { id: sessionId },
+      select: { phaseTimings: true }
+    });
+
+    const currentTimings = currentSession?.phaseTimings as any || {};
+    
     return prisma.practiceSession.update({
       where: { id: sessionId },
       data: {
         reflectionData: {
           notes: data.notes
+        },
+        phaseTimings: {
+          ...currentTimings,
+          reflection: data.timeSpent || 0
         }
       },
       include: {

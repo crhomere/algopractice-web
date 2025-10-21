@@ -4,7 +4,7 @@ import { DatabaseService } from '@/lib/database';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: sessionId } = await params;
-    const { pseudocode, edgeCases, timeComplexity, spaceComplexity } = await req.json();
+    const { pseudocode, edgeCases, timeSpent } = await req.json();
 
     if (!sessionId) {
       return NextResponse.json(
@@ -13,12 +13,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    // Update the session with planning data
+    console.log('Updating planning phase for session:', sessionId, 'with data:', { pseudocode, edgeCases, timeSpent });
+
+    // Update the session with planning data and timing
     const session = await DatabaseService.updateSessionPlanning(sessionId, {
       pseudocode,
-      edgeCases: edgeCases || [],
-      timeComplexity,
-      spaceComplexity
+      edgeCases,
+      timeSpent
     });
 
     return NextResponse.json(session);

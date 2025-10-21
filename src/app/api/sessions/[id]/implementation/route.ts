@@ -4,7 +4,7 @@ import { DatabaseService } from '@/lib/database';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: sessionId } = await params;
-    const { language, sourceCode } = await req.json();
+    const { language, sourceCode, timeSpent } = await req.json();
 
     if (!sessionId) {
       return NextResponse.json(
@@ -20,10 +20,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    // Update the session with implementation data
+    console.log('Updating implementation phase for session:', sessionId, 'with data:', { language, sourceCode, timeSpent });
+
+    // Update the session with implementation data and timing
     const session = await DatabaseService.updateSessionImplementation(sessionId, {
       language,
-      sourceCode
+      sourceCode,
+      timeSpent
     });
 
     return NextResponse.json(session);

@@ -251,6 +251,10 @@ export default function WorkspacePage() {
 	async function persistPhase(p: Phase) {
 		try {
 			if (!sessionId) return;
+			
+			// Calculate time spent on current phase
+			const timeSpent = elapsed();
+			
 			if (p === 'explore') {
 				await fetch(`/api/sessions/${sessionId}/explore`, { 
 					method: 'POST', 
@@ -259,15 +263,39 @@ export default function WorkspacePage() {
 						explorePatterns: explorePatterns.map(p => ({
 							...p,
 							cues: Array.from(p.cues)
-						}))
+						})),
+						timeSpent: timeSpent
 					}) 
 				});
 			} else if (p === 'planning') {
-				await fetch(`/api/sessions/${sessionId}/planning`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pseudocode: planning.pseudocode, edgeCases: Array.from(planning.edgeCases) }) });
+				await fetch(`/api/sessions/${sessionId}/planning`, { 
+					method: 'POST', 
+					headers: { 'Content-Type': 'application/json' }, 
+					body: JSON.stringify({ 
+						pseudocode: planning.pseudocode, 
+						edgeCases: Array.from(planning.edgeCases),
+						timeSpent: timeSpent
+					}) 
+				});
 			} else if (p === 'implementation') {
-				await fetch(`/api/sessions/${sessionId}/implementation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language: 'javascript', sourceCode: implCode }) });
+				await fetch(`/api/sessions/${sessionId}/implementation`, { 
+					method: 'POST', 
+					headers: { 'Content-Type': 'application/json' }, 
+					body: JSON.stringify({ 
+						language: 'javascript', 
+						sourceCode: implCode,
+						timeSpent: timeSpent
+					}) 
+				});
 			} else if (p === 'reflection') {
-				await fetch(`/api/sessions/${sessionId}/reflection`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes }) });
+				await fetch(`/api/sessions/${sessionId}/reflection`, { 
+					method: 'POST', 
+					headers: { 'Content-Type': 'application/json' }, 
+					body: JSON.stringify({ 
+						notes,
+						timeSpent: timeSpent
+					}) 
+				});
 			}
 		} catch (e) { console.error(e); }
 	}
